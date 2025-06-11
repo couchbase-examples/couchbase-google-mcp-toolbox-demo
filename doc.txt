@@ -1,0 +1,77 @@
+graph TD
+    A[Production Lines] --> B[Machines]
+    B --> C[Alerts]
+    B --> D[Maintenance Records]
+    A --> E[Production Metrics]
+    A --> F[Shift Reports]
+    G[Operators] --> H[Operator Queries]
+    H --> I[AI Responses]
+    J[Manual Chunks] --> I
+    C --> I
+    D --> I
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#ffebee
+    style D fill:#e8f5e8
+
+
+
+🔗 Detailed Dataset Relationships
+
+1. Production Lines → Machines (One-to-Many)
+ProductionLine:
+  - production_line_id: "LINE_01"
+  - machines: ["MCH_001", "MCH_002", "MCH_003"]  # References to machines
+  - status: "running"
+  - efficiency: 87.5%
+
+Machine:
+  - machine_id: "MCH_001"
+  - production_line_id: "LINE_01"  # Foreign key reference
+  - machine_type: "Ultima_SV"
+  - current_status: "operational"
+
+2. Machines → Alerts (One-to-Many)
+Alert:
+  - alert_id: "uuid-123"
+  - machine_id: "MCH_001"        # Foreign key to machine
+  - production_line_id: "LINE_01" # Denormalized for faster queries
+  - severity: "high"
+  - title: "High Temperature Warning"
+  - error_code: "E001"
+
+
+3. Machines → Maintenance Records (One-to-Many)
+MaintenanceRecord:
+  - maintenance_id: "uuid-456"
+  - machine_id: "MCH_001"        # Foreign key to machine
+  - maintenance_type: "Preventive Maintenance"
+  - technician: "Bob Miller"
+  - parts_used: ["Oil Filter", "Belt Drive"]
+
+
+4. Production Lines → Production Metrics (One-to-Many)
+ProductionMetrics:
+  - line_id: "LINE_01"           # Foreign key to production line
+  - timestamp: "2024-01-15T08:00:00"
+  - units_produced: 950
+  - efficiency: 87.5%
+  - oee: 82.3%
+
+
+5. Operators → Queries → AI Responses (Chain Relationship)
+
+
+OperatorQuery:
+  - query_id: "uuid-789"
+  - operator_id: "john_smith"
+  - production_line_id: "LINE_01"  # Context reference
+  - machine_id: "MCH_001"          # Optional specific machine
+  - query_text: "High temp warning on Ultima SV"
+
+AIResponse:
+  - response_id: "uuid-abc"
+  - query_id: "uuid-789"           # Foreign key to query
+  - manual_references: ["manual_chunk_0042"]  # References to manual
+  - sources: ["alert_uuid-123"]    # References to related alerts

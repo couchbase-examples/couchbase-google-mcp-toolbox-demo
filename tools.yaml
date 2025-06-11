@@ -1,0 +1,270 @@
+# Google GenAI Toolbox Configuration for CPG Manufacturing with RAG Enhancement
+# This file defines database tools for AI agents to interact with manufacturing data
+
+sources:
+  couchbase-manufacturing:
+    kind: couchbase
+    connectionString: couchbase://localhost
+    username: admin
+    password: Password@12345
+    bucket: cpg_manufacturing
+    scope: manufacturing
+
+tools:
+  # Production Line Management Tools
+  get-production-line-status:
+    kind: couchbase-sql
+    source: couchbase-manufacturing
+    description: Get the current status and metrics of a production line
+    parameters:
+      - name: line_id
+        type: string
+        description: Production line ID (e.g., LINE_01)
+    statement: |
+      SELECT production_line_id, name, status, efficiency, target_output, actual_output, current_product
+      FROM `cpg_manufacturing`.`manufacturing`.`production_lines` 
+      WHERE type = 'production_line' AND production_line_id = $line_id
+
+  get-all-production-lines:
+    kind: couchbase-sql
+    source: couchbase-manufacturing
+    description: Get overview of all production lines and their current status
+    parameters: []
+    statement: |
+      SELECT production_line_id, name, status, efficiency, target_output, actual_output
+      FROM `cpg_manufacturing`.`manufacturing`.`production_lines` 
+      WHERE type = 'production_line'
+      ORDER BY production_line_id
+
+  # Machine Management Tools
+  get-machine-details:
+    kind: couchbase-sql
+    source: couchbase-manufacturing
+    description: Get detailed information about a specific machine
+    parameters:
+      - name: machine_id
+        type: string
+        description: Machine ID (e.g., MCH_001)
+    statement: |
+      SELECT machine_id, name, machine_type, production_line_id, current_status, 
+             operating_parameters, specifications, last_maintenance, next_maintenance
+      FROM `cpg_manufacturing`.`manufacturing`.`machines` 
+      WHERE type = 'machine' AND machine_id = $machine_id
+
+  get-machines-by-line:
+    kind: couchbase-sql
+    source: couchbase-manufacturing
+    description: Get all machines on a specific production line
+    parameters:
+      - name: line_id
+        type: string
+        description: Production line ID
+    statement: |
+      SELECT machine_id, name, machine_type, current_status, operating_parameters
+      FROM `cpg_manufacturing`.`manufacturing`.`machines` 
+      WHERE type = 'machine' AND production_line_id = $line_id
+      ORDER BY machine_id
+
+  # Alert Management Tools
+  get-active-alerts:
+    kind: couchbase-sql
+    source: couchbase-manufacturing
+    description: Get all active alerts, optionally filtered by production line
+    parameters:
+      - name: line_id
+        type: string
+        description: Production line ID (optional, leave empty for all lines)
+        
+    statement: |
+      SELECT alert_id, machine_id, production_line_id, severity, title, description, 
+             error_code, timestamp, parameters
+      FROM `cpg_manufacturing`.`manufacturing`.`alerts` 
+      WHERE type = 'alert' AND status = 'active'
+      AND ($line_id IS NULL OR production_line_id = $line_id)
+      ORDER BY severity DESC, timestamp DESC
+      LIMIT 20
+
+  get-critical-alerts:
+    kind: couchbase-sql
+    source: couchbase-manufacturing
+    description: Get all critical severity alerts across the facility
+    parameters: []
+    statement: |
+      SELECT alert_id, machine_id, production_line_id, title, description, 
+             error_code, timestamp, parameters
+      FROM `cpg_manufacturing`.`manufacturing`.`alerts` 
+      WHERE type = 'alert' AND status = 'active' AND severity = 'critical'
+      ORDER BY timestamp DESC
+
+  get-machine-alerts:
+    kind: couchbase-sql
+    source: couchbase-manufacturing
+    description: Get recent alerts for a specific machine
+    parameters:
+      - name: machine_id
+        type: string
+        description: Machine ID
+      - name: hours_back
+        type: integer
+        description: Number of hours to look back (default 24)
+        
+    statement: |
+      SELECT alert_id, severity, title, error_code, timestamp, status
+      FROM `cpg_manufacturing`.`manufacturing`.`alerts` 
+      WHERE type = 'alert' AND machine_id = $machine_id
+      AND DATE_DIFF_STR(CLOCK_STR(), timestamp, 'hour') <= COALESCE($hours_back, 24)
+      ORDER BY timestamp DESC
+      LIMIT 10
+
+  # Maintenance Management Tools
+  get-maintenance-history:
+    kind: couchbase-sql
+    source: couchbase-manufacturing
+    description: Get maintenance history for a machine
+    parameters:
+      - name: machine_id
+        type: string
+        description: Machine ID
+      - name: limit_records
+        type: integer
+        description: Maximum number of records to return (default 10)
+        
+    statement: |
+      SELECT maintenance_id, maintenance_type, status, scheduled_date, 
+             started_date, completed_date, technician, description, parts_used, cost
+      FROM `cpg_manufacturing`.`manufacturing`.`maintenance` 
+      WHERE type = 'maintenance_record' AND machine_id = $machine_id
+      ORDER BY scheduled_date DESC
+      LIMIT COALESCE($limit_records, 10)
+
+  get-upcoming-maintenance:
+    kind: couchbase-sql
+    source: couchbase-manufacturing
+    description: Get upcoming scheduled maintenance across all machines
+    parameters:
+      - name: days_ahead
+        type: integer
+        description: Number of days to look ahead (default 30)
+        
+    statement: |
+      SELECT maintenance_id, machine_id, maintenance_type, scheduled_date, 
+             technician, description
+      FROM `cpg_manufacturing`.`manufacturing`.`maintenance` 
+      WHERE type = 'maintenance_record' 
+      AND status IN ('scheduled', 'in_progress')
+      AND scheduled_date <= DATE_ADD(NOW(), INTERVAL COALESCE($days_ahead, 30) DAY)
+      ORDER BY scheduled_date ASC
+
+  get-overdue-maintenance:
+    kind: couchbase-sql
+    source: couchbase-manufacturing
+    description: Get overdue maintenance tasks
+    parameters: []
+    statement: |
+      SELECT maintenance_id, machine_id, maintenance_type, scheduled_date, 
+             technician, description
+      FROM `cpg_manufacturing`.`manufacturing`.`maintenance` 
+      WHERE type = 'maintenance_record' AND status = 'overdue'
+      ORDER BY scheduled_date ASC
+
+  # Production Metrics Tools
+  get-line-efficiency:
+    kind: couchbase-sql
+    source: couchbase-manufacturing
+    description: Get efficiency metrics for a production line over time
+    parameters:
+      - name: line_id
+        type: string
+        description: Production line ID
+      - name: days_back
+        type: integer
+        description: Number of days to analyze (default 7)
+        
+    statement: |
+      SELECT line_id, timestamp, units_produced, target_units, efficiency, 
+             quality_rate, downtime_minutes, oee
+      FROM `cpg_manufacturing`.`manufacturing`.`metrics` 
+      WHERE type = 'production_metrics' AND line_id = $line_id
+      AND timestamp >= DATE_SUB(NOW(), INTERVAL COALESCE($days_back, 7) DAY)
+      ORDER BY timestamp DESC
+
+  get-facility-overview:
+    kind: couchbase-sql
+    source: couchbase-manufacturing
+    description: Get high-level overview of facility performance
+    parameters: []
+    statement: |
+      SELECT 
+        (SELECT COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`production_lines` WHERE type = 'production_line') as total_lines,
+        (SELECT COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`machines` WHERE type = 'machine') as total_machines,
+        (SELECT COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`alerts` WHERE type = 'alert' AND status = 'active') as active_alerts,
+        (SELECT COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`alerts` WHERE type = 'alert' AND status = 'active' AND severity = 'critical') as critical_alerts,
+        (SELECT COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`maintenance` WHERE type = 'maintenance_record' AND status = 'overdue') as overdue_maintenance
+
+  # Context-Aware Alert Analysis Tools
+  get-machine-context-for-alert:
+    kind: couchbase-sql
+    source: couchbase-manufacturing
+    description: Get comprehensive machine context for alert analysis
+    parameters:
+      - name: machine_id
+        type: string
+        description: Machine ID to get context for
+    statement: |
+      SELECT m.machine_id, m.name, m.machine_type, m.current_status, 
+             m.operating_parameters, m.specifications,
+             a.alert_id, a.severity, a.error_code, a.description as alert_description,
+             mr.maintenance_type, mr.completed_date as last_maintenance
+      FROM `cpg_manufacturing`.`manufacturing`.`machines` m
+      LEFT JOIN `cpg_manufacturing`.`manufacturing`.`alerts` a ON m.machine_id = a.machine_id AND a.type = 'alert' AND a.status = 'active'
+      LEFT JOIN `cpg_manufacturing`.`manufacturing`.`maintenance` mr ON m.machine_id = mr.machine_id AND mr.type = 'maintenance_record'
+      WHERE m.type = 'machine' AND m.machine_id = $machine_id
+      ORDER BY a.timestamp DESC, mr.completed_date DESC
+      LIMIT 5
+
+# Tool Groups for Different Use Cases
+toolsets:
+  production-monitoring:
+    - get-all-production-lines
+    - get-production-line-status
+    - get-active-alerts
+    - get-critical-alerts
+    - get-facility-overview
+
+  machine-management:
+    - get-machine-details
+    - get-machines-by-line
+    - get-machine-alerts
+    - get-maintenance-history
+    - get-machine-context-for-alert
+
+  troubleshooting:
+    - get-machine-details
+    - get-machine-alerts
+    - get-machine-context-for-alert
+    - get-maintenance-history
+
+  maintenance-planning:
+    - get-upcoming-maintenance
+    - get-overdue-maintenance
+    - get-maintenance-history
+
+  performance-analysis:
+    - get-line-efficiency
+    - get-facility-overview
+    - get-production-line-status
+
+  full-manufacturing-suite:
+    - get-all-production-lines
+    - get-production-line-status
+    - get-machine-details
+    - get-machines-by-line
+    - get-active-alerts
+    - get-critical-alerts
+    - get-machine-alerts
+    - get-maintenance-history
+    - get-upcoming-maintenance
+    - get-overdue-maintenance
+    - get-line-efficiency
+    - get-facility-overview
+    - get-machine-context-for-alert 
