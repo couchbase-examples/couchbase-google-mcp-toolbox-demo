@@ -9,7 +9,7 @@ import logging
 from pathlib import Path
 
 from setup.couchbase_client import CouchbaseClient
-from setup.document_processor import DocumentProcessor
+from setup.document_processor_pdf import DocumentProcessor
 from setup.sample_data_generator import SampleDataGenerator
 from config import settings
 

@@ -4,7 +4,7 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 
 # LangChain imports for document processing pipeline
-from langchain_community.document_loaders import TextLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
@@ -74,31 +74,31 @@ class DocumentProcessor:
             logger.info("   5. Add text field 'content'")
             self.vector_store = None
     
-    def load_text_documents(self, text_path: str) -> List[Document]:
-        """Load text documents using LangChain TextLoader."""
+    def load_pdf_documents(self, pdf_path: str) -> List[Document]:
+        """Load PDF documents using LangChain PyPDFLoader."""
         try:
-            if not Path(text_path).exists():
-                raise FileNotFoundError(f"Text file not found: {text_path}")
+            if not Path(pdf_path).exists():
+                raise FileNotFoundError(f"PDF file not found: {pdf_path}")
             
-            # Use LangChain's TextLoader
-            loader = TextLoader(text_path, encoding='utf-8')
+            # Use LangChain's PyPDFLoader
+            loader = PyPDFLoader(pdf_path)
             documents = loader.load()
             
-            logger.info(f"📄 Loaded {len(documents)} documents from text file: {text_path}")
+            logger.info(f"📄 Loaded {len(documents)} pages from PDF: {pdf_path}")
             
             # Add source metadata to each document
             for i, doc in enumerate(documents):
                 doc.metadata.update({
-                    'source_file': text_path,
-                    'document_index': i,
+                    'source_file': pdf_path,
+                    'page_number': i + 1,
                     'document_type': 'manual',
-                    'loader': 'TextLoader'
+                    'loader': 'PyPDFLoader'
                 })
             
             return documents
             
         except Exception as e:
-            logger.error(f"❌ Error loading text file with LangChain TextLoader: {e}")
+            logger.error(f"❌ Error loading PDF with LangChain PyPDFLoader: {e}")
             return []
     
     def split_documents(self, documents: List[Document]) -> List[Document]:
@@ -154,15 +154,15 @@ class DocumentProcessor:
         found_keywords = [kw for kw in manufacturing_keywords if kw in text_lower]
         return found_keywords[:10]  # Return top 10 keywords
     
-    def process_manual(self, text_path: str) -> bool:
-        """Process text manual using LangChain pipeline and store in Couchbase."""
+    def process_manual(self, pdf_path: str) -> bool:
+        """Process PDF manual using LangChain pipeline and store in Couchbase."""
         try:
-            # Step 1: Load text documents using LangChain
-            logger.info("🔄 Step 1: Loading text documents...")
-            documents = self.load_text_documents(text_path)
+            # Step 1: Load PDF documents using LangChain
+            logger.info("🔄 Step 1: Loading PDF documents...")
+            documents = self.load_pdf_documents(pdf_path)
             
             if not documents:
-                logger.error("❌ No documents loaded from text file")
+                logger.error("❌ No documents loaded from PDF")
                 return False
             
             # Step 2: Split documents into chunks using LangChain
@@ -188,7 +188,7 @@ class DocumentProcessor:
                 )
                 
                 logger.info(f"✅ Successfully stored {len(stored_ids)} chunks in Couchbase vector store")
-                logger.info("🎯 Pipeline completed: Text → Chunks → Embeddings → Couchbase")
+                logger.info("🎯 Pipeline completed: PDF → Chunks → Embeddings → Couchbase")
                 
                 return len(stored_ids) > 0
             else:
@@ -269,10 +269,10 @@ class DocumentProcessor:
                         'field': 'metadata.contains_procedure',
                         'term': True
                     }
-                elif 'document_index' in filters:
+                elif 'page_number' in filters:
                     search_options['query'] = {
-                        'field': 'metadata.document_index',
-                        'term': filters['document_index']
+                        'field': 'metadata.page_number',
+                        'term': filters['page_number']
                     }
             
             # Use LangChain vector store with search options
@@ -350,7 +350,7 @@ class DocumentProcessor:
             # This would need to be implemented based on Couchbase collection stats
             stats = {
                 "vector_store_initialized": True,
-                "embedding_model": "gemini-embedding-exp-03-07",
+                "embedding_model": "text-embedding-3-large",
                 "text_splitter": "RecursiveCharacterTextSplitter",
                 "chunk_size": 1000,
                 "chunk_overlap": 200
