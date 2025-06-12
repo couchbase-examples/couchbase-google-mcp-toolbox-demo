@@ -59,6 +59,17 @@ graph TB
     G --> L
     E --> P
     D --> M
+
+    %% Agents access toolsets via MCP server
+    F --> D
+    H --> D
+    I --> D
+    J --> D
+    K --> D
+
+    %% Manual search available only to troubleshooting and general agents
+    F --> E
+    K --> E
 ```
 
 ## 🚀 Quick Start
