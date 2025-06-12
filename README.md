@@ -55,7 +55,7 @@ graph TB
     C --> J
     C --> K
     G --> L
-    E --> P
+    E[Couchbase Manual Retriever] --> P
     D --> M
 
     %% Agents access toolsets via MCP server
