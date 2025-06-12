@@ -4,16 +4,14 @@ A comprehensive demonstration of a Consumer Packaged Goods (CPG) manufacturing s
 
 ## 🌟 Key Features
 
-This demo showcases integration with **Google GenAI Toolbox** and **Couchbase Vector Search**, providing:
+This demo combines the **GenAI Toolbox MCP (Multi-Collection Provider) server** with **Couchbase Vector Search** and **LangGraph** to deliver:
 
-- **🧰 Natural Language Database Queries**: Convert plain English to optimized database operations
-- **⚡ Enhanced Performance**: Connection pooling, caching, and optimized tool management
-- **🔒 Enterprise Security**: Database connection management with async support
-- **📊 Observability**: Built-in monitoring with comprehensive logging
-- **🎯 Specialized Agents**: Dedicated agents for different manufacturing scenarios (troubleshooting, maintenance, monitoring, performance analysis)
-- **🛠️ Couchbase Manual Tools**: Semantic search of machine manuals using vector embeddings
-- **🔍 Vector Similarity Search**: Google Generative AI embeddings for manual content search
-- **📖 Context-Aware Manual Integration**: Machine-specific and error-specific guidance
+• **🧰 Natural-Language Tool Access** – The MCP server turns every SQL query in `tools.yaml` into a REST/LLM-friendly tool that agents can invoke with plain English.
+• **🎯 Specialized Multi-Tool Agents** – Five LangGraph ReAct agents (troubleshooting, maintenance, monitoring, performance, general) auto-select the right toolset; troubleshooting and general agents additionally tap the manual semantic-search tool.
+• **🔍 Semantic Manual Search** – Vector embeddings let operators retrieve the most relevant PDF manual snippets for a given issue (exposed only to the agents that need it).
+• **💾 Resilient State & Replay** – `langgraph-checkpointer-couchbase` persists every agent step in Couchbase so conversations can resume or be audited later.
+• **⚡ High Throughput** – Connection pooling, async I/O and caching across database, embeddings and tool calls keep latency low even under load.
+• **🔒 Enterprise-Grade Security** – Centralised MCP server + scoped credentials; no direct DB creds in the web tier.
 
 ## 🏗️ Architecture Overview
 
@@ -35,7 +33,7 @@ graph TB
         K[General Agent] --> G
     end
     
-    subgraph "DatabaseManager"
+    subgraph "Database"
         L[Couchbase Cluster]
     end
     
