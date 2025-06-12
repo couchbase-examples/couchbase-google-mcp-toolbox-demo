@@ -54,7 +54,7 @@ graph TB
     C --> I
     C --> J
     C --> K
-    G --> Q[langgraph-checkpointer-couchbase]
+    G --> U[langgraph-checkpointer-couchbase]
     Q --> N 
     E[Couchbase Manual Retriever] --> P
     D --> M
