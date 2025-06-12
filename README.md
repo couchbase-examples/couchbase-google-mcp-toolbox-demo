@@ -25,8 +25,6 @@ graph TB
     
     subgraph "AI Layer"
         B --> C[Enhanced Manufacturing Agent]
-        C --> D[GenAI Toolbox MCP Server]
-        C --> E[Couchbase Manual Retriever]
     end
     
     subgraph "Agent Types"
@@ -151,7 +149,7 @@ This will:
 
 ```bash
 # Start the FastAPI backend
-python api.py
+uvicorn api:app --reload
 ```
 
 The API will be available at `http://localhost:8000`
