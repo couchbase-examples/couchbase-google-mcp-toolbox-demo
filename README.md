@@ -25,7 +25,7 @@ graph TB
     
     subgraph "AI Layer"
         B --> C[Enhanced Manufacturing Agent]
-        C --> D[Google GenAI Toolbox Server]
+        C --> D[GenAI Toolbox MCP Server]
         C --> E[Couchbase Manual Retriever]
     end
     
@@ -58,6 +58,7 @@ graph TB
     C --> K
     G --> L
     E --> P
+    D --> M
 ```
 
 ## 🚀 Quick Start
@@ -107,16 +108,19 @@ APP_NAME=CPG Manufacturing AI Assistant
 DEBUG=true
 ```
 
-### 3. Set Up Google GenAI Toolbox
+### 3. Start the GenAI Toolbox MCP Server
 
-Start the GenAI Toolbox server:
+The GenAI Toolbox **MCP (Multi-Collection Provider) server** exposes all database tools defined in `tools.yaml`.  
+Make sure you have `tools.yaml` configured with the correct Couchbase connection string, username and password first.
 
 ```bash
-# Download and start the GenAI Toolbox server (binary will be downloaded automatically)
-# The toolbox server will start on port 5000
+# Download the binary (first time only) and start the server on port 5000
+genai-toolbox serve --tools-file tools.yaml --port 5000
 ```
 
-Configure `tools.yaml` with your Couchbase connection details.
+The server will read `tools.yaml`, automatically register the data sources and REST endpoints, and start listening on `http://localhost:5000`.
+
+Tip: add the binary to your `$PATH` so you can just type `genai-toolbox` from any folder.
 
 ### 4. Initialize the System
 
@@ -308,43 +312,12 @@ Different system prompts for specialized agents:
 
 ## 🧪 Running the Demo
 
-### Complete System Setup
-
 ```bash
+pip install -r requirements.txt
 python setup_system.py  # Initialize database and generate sample data
-python api.py           # Start backend API (port 8000)
+uvicorn api:app --reload          # Start backend API (port 8000)
 streamlit run streamlit_app.py  # Start web interface (port 8501)
-```
 
-### Manual Testing
-
-```bash
-# Test database connection
-python -c "
-from setup.couchbase_client import CouchbaseClient
-client = CouchbaseClient()
-print('Database connected successfully')
-client.close()
-"
-
-# Test agent creation
-python -c "
-import asyncio
-from src.db import DatabaseManager
-from src.agents.enhanced_manufacturing_agent import create_manufacturing_agent
-
-async def test():
-    db = DatabaseManager()
-    await db.initialize()
-    agent = create_manufacturing_agent(
-        cluster=db.get_cluster(),
-        checkpointer=db.get_checkpointer()
-    )
-    print('Agent created successfully')
-    await db.cleanup()
-
-asyncio.run(test())
-"
 ```
 
 ## 📈 Performance Metrics
@@ -372,65 +345,13 @@ system_metrics = {
 }
 ```
 
-## 🔍 Troubleshooting
-
-### Common Issues
-
-1. **Couchbase Connection Errors**
-
-   ```bash
-   # Check connection
-   python -c "
-   from setup.couchbase_client import CouchbaseClient
-   client = CouchbaseClient()
-   print('Connected successfully')
-   client.close()
-   "
-   ```
-
-2. **GenAI Toolbox Not Available**
-
-   ```bash
-   # Check toolbox status
-   curl http://127.0.0.1:5000/health
-   ```
-
-3. **Missing Manual Content**
-
-   ```bash
-   # Check manual processing
-   python -c "
-   from setup.couchbase_client import CouchbaseClient
-   client = CouchbaseClient()
-   collection = client.get_collection('manuals')
-   # Check if manual chunks exist
-   client.close()
-   "
-   ```
-
-4. **Agent Initialization Errors**
+**Agent Initialization Errors**
 
    ```bash
    # Debug agent creation
    export LOG_LEVEL=DEBUG
    python api.py
    ```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Update documentation
-5. Submit a pull request
-
-When contributing:
-
-- Follow the existing code structure
-- Add proper logging and error handling
-- Test with various manufacturing scenarios
-- Ensure database compatibility
-- Update configuration documentation
 
 ## 📄 License
 
