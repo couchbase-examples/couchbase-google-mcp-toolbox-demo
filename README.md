@@ -43,7 +43,7 @@ graph TB
     end
     
     subgraph "Toolbox Integration"
-        D --> Q[Production Tools]
+        D[GenAI Toolbox MCP Server] --> Q[Production Tools]
         D --> R[Machine Management Tools]
         D --> S[Alert Management Tools]
         D --> T[Maintenance Tools]
