@@ -120,7 +120,7 @@ Make sure you have `tools.yaml` configured with the correct Couchbase connection
 
 ```bash
 # Download the binary (first time only) and start the server on port 5000
-genai-toolbox serve --tools-file tools.yaml --port 5000
+genai-toolbox --tools-file tools.yaml --port 5000
 ```
 
 The server will read `tools.yaml`, automatically register the data sources and REST endpoints, and start listening on `http://localhost:5000`.

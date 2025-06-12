@@ -9,7 +9,7 @@ import logging
 from pathlib import Path
 
 from setup.couchbase_client import CouchbaseClient
-from setup.document_processor_pdf import DocumentProcessor
+from setup.document_processor import DocumentProcessor
 from setup.sample_data_generator import SampleDataGenerator
 from config import settings
 
@@ -60,7 +60,7 @@ class SystemSetup:
             logger.error(f"❌ Setup component initialization failed: {e}")
             return False
     
-    async def process_manual_documents(self, manual_path: str = "manual.pdf"):
+    async def process_manual_documents(self, manual_path: str = "manual.txt"):
         """Process and store manual documents."""
         logger.info("📚 Processing manual documents...")
         
@@ -68,7 +68,7 @@ class SystemSetup:
             manual_file = Path(manual_path)
             if not manual_file.exists():
                 logger.warning(f"Manual file not found: {manual_path}")
-                logger.info("Skipping manual processing - you can add manual.pdf later")
+                logger.info("Skipping manual processing - you can add manual.txt later")
                 return True
             
             logger.info(f"Processing manual: {manual_path}")
@@ -97,7 +97,7 @@ class SystemSetup:
             logger.error(f"❌ Sample data generation failed: {e}")
             return None
     
-    async def run_full_setup(self, manual_path: str = "manual.pdf"):
+    async def run_full_setup(self, manual_path: str = "manual.txt"):
         """Run the complete system setup process."""
         logger.info("🚀 Starting full system setup...")
         
@@ -147,7 +147,7 @@ async def main():
     Prerequisites:
     • Couchbase Server running and accessible
     • Valid configuration in config.py
-    • Optional: manual.pdf file for document processing
+    • Optional: manual.txt file for document processing
     
     """)
     

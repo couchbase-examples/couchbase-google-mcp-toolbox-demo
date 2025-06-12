@@ -76,7 +76,7 @@ tools:
         description: Production line ID (optional, leave empty for all lines)
         
     statement: |
-      SELECT alert_id, machine_id, production_line_id, severity, title, description, 
+      SELECT alert_id, machine_id, production_line_id, severity,
              error_code, timestamp, parameters
       FROM `cpg_manufacturing`.`manufacturing`.`alerts` 
       WHERE type = 'alert' AND status = 'active'
@@ -90,7 +90,7 @@ tools:
     description: Get all critical severity alerts across the facility
     parameters: []
     statement: |
-      SELECT alert_id, machine_id, production_line_id, title, description, 
+      SELECT alert_id, machine_id, production_line_id, 
              error_code, timestamp, parameters
       FROM `cpg_manufacturing`.`manufacturing`.`alerts` 
       WHERE type = 'alert' AND status = 'active' AND severity = 'critical'
@@ -109,7 +109,7 @@ tools:
         description: Number of hours to look back (default 24)
         
     statement: |
-      SELECT alert_id, severity, title, error_code, timestamp, status
+      SELECT alert_id, severity, error_code, timestamp, status
       FROM `cpg_manufacturing`.`manufacturing`.`alerts` 
       WHERE type = 'alert' AND machine_id = $machine_id
       AND DATE_DIFF_STR(CLOCK_STR(), timestamp, 'hour') <= COALESCE($hours_back, 24)

@@ -342,7 +342,7 @@ class CouchbaseClient:
                                             "enabled": True,
                                             "fields": [
                                                 {
-                                                    "dims": 3072,
+                                                    "dims": 768,
                                                     "index": True,
                                                     "name": "embedding",
                                                     "similarity": "dot_product",

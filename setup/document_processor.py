@@ -21,6 +21,8 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
+EMBEDDING_MODEL = "models/text-embedding-004"
+
 class DocumentProcessor:
     """Process and chunk documents for RAG implementation using LangChain pipeline."""
     
@@ -28,7 +30,7 @@ class DocumentProcessor:
         self.couchbase_client = couchbase_client
         
         # Initialize OpenAI embeddings
-        self.embedding_model = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-exp-03-07")
+        self.embedding_model = GoogleGenerativeAIEmbeddings(model=EMBEDDING_MODEL)
         
         # Initialize LangChain text splitter with optimized settings
         self.text_splitter = RecursiveCharacterTextSplitter(
@@ -350,7 +352,7 @@ class DocumentProcessor:
             # This would need to be implemented based on Couchbase collection stats
             stats = {
                 "vector_store_initialized": True,
-                "embedding_model": "gemini-embedding-exp-03-07",
+                "embedding_model": EMBEDDING_MODEL,
                 "text_splitter": "RecursiveCharacterTextSplitter",
                 "chunk_size": 1000,
                 "chunk_overlap": 200
