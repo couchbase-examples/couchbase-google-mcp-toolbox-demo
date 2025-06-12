@@ -35,11 +35,8 @@ graph TB
         K[General Agent] --> G
     end
     
-    subgraph "Database Layer"
-        L[DatabaseManager] --> M[Couchbase Cluster]
-        L --> N[AsyncCouchbaseSaver]
-        M --> O[Manufacturing Data Collections]
-        M --> P[Manual Vector Store]
+    subgraph "DatabaseManager"
+        L[Couchbase Cluster]
     end
     
     subgraph "Toolbox Integration"
@@ -56,8 +53,8 @@ graph TB
     C --> K
     G --> U[langgraph-checkpointer-couchbase]
     U --> N 
-    E[Couchbase Manual Retriever] --> P
-    D --> M
+    E[Couchbase Manual Retriever] --> L
+    D --> L
 
     %% Agents access toolsets via MCP server
     F --> D
