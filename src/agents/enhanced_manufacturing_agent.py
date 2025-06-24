@@ -14,7 +14,7 @@ from langgraph_checkpointer_couchbase import AsyncCouchbaseSaver
 
 from src.models.manufacturing_models import OperatorQuery, AIResponse
 from src.tools.couchbase_manual_retriever import create_couchbase_manual_tools
-from config import settings
+from src.config.config import settings
 
 logger = logging.getLogger(__name__)
 

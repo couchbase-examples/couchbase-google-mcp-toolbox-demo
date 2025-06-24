@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import datetime
 from couchbase.cluster import Cluster
 from couchbase.auth import PasswordAuthenticator
@@ -7,7 +7,7 @@ from couchbase.options import ClusterOptions
 from couchbase.exceptions import CouchbaseException
 from couchbase.scope import Scope
 from couchbase.management.search import SearchIndex
-from config import settings
+from src.config.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -250,6 +250,19 @@ class CouchbaseClient:
                 f"CREATE INDEX idx_metrics_timestamp ON {metrics_path}(timestamp)"
             ])
             
+            # Indexes for solutions collection (error_code to solutions mapping)
+            solutions_collection = settings.couchbase_collections.get('solutions')
+            if solutions_collection:
+                if scope_name == "_default":
+                    solutions_path = f"`{bucket_name}`"
+                else:
+                    solutions_path = f"`{bucket_name}`.`{scope_name}`.`{solutions_collection}`"
+
+                all_indexes.extend([
+                    f"CREATE INDEX idx_solutions_type ON {solutions_path}(type)",
+                    f"CREATE INDEX idx_solutions_error_code ON {solutions_path}(error_code)"
+                ])
+            
             # Create all indexes
             for index in all_indexes:
                 try:
@@ -268,111 +281,124 @@ class CouchbaseClient:
     def create_vector_indexes(self):
         """Create vector search indexes for RAG functionality."""
         try:
-            bucket_name = settings.couchbase_bucket_name
-            scope_name = settings.couchbase_scope_name
             manuals_collection = settings.couchbase_collections['manuals']
             
             logger.info("Creating vector search indexes for RAG...")
             
-            # Vector search index for manual content
-            # Using text-embedding-3-large which has 3072 dimensions
-            vector_index_name = settings.couchbase_vector_index_name
-            
-            if scope_name == "_default":
-                collection_path = f"`{bucket_name}`"
-            else:
-                collection_path = f"`{bucket_name}`.`{scope_name}`.`{manuals_collection}`"
-            
-            # Create vector search index using Search API
-            try:
-                # For Couchbase 7.6+, we use the Search Service to create vector indexes
-                # This is a more complex operation that might require different API calls
-                # depending on your Couchbase version and setup
-                
-                vector_index_definition = {
-                    "type": "fulltext-index",
-                    "name": vector_index_name,
-                    "sourceName": bucket_name,
-                    "sourceType": "gocbcore",
-                    "planParams": {
-                        "index_partitions": 1,
-                        "num_replicas": 0
-                    },
-                    "params": {
-                        "doc_config": {
-                            "docid_prefix_delim": "",
-                            "docid_regexp": "",
-                            "mode": "scope.collection.type_field",
-                            "type_field": "type",
-                        },
-                        "mapping": {
-                            "default_analyzer": "standard",
-                            "default_datetime_parser": "dateTimeOptional",
-                            "default_field": "_all",
-                            "default_mapping": {
-                                "dynamic": True,
-                                "enabled": False
-                            },
-                            "default_type": "_default",
-                            "docvalues_dynamic": False,
-                            "index_dynamic": True,
-                            "store_dynamic": True,
-                            "type_field": "_type",
-                            "types": {
-                                f"{scope_name}.{manuals_collection}": {
-                                    "dynamic": False,
-                                    "enabled": True,
-                                    "properties": {
-                                        "content": {
-                                            "dynamic": False,
-                                            "enabled": True,
-                                            "fields": [
-                                                {
-                                                    "include_in_all": True,
-                                                    "include_term_vectors": True,
-                                                    "store": True,
-                                                    "index": True,
-                                                    "name": "content",
-                                                    "type": "text"
-                                                }
-                                            ]
-                                        },
-                                        "embedding": {
-                                            "dynamic": False,
-                                            "enabled": True,
-                                            "fields": [
-                                                {
-                                                    "dims": 768,
-                                                    "index": True,
-                                                    "name": "embedding",
-                                                    "similarity": "dot_product",
-                                                    "type": "vector",
-                                                    "vector_index_optimized_for": "recall"
-                                                }
-                                            ]
-                                        },
-                                        "metadata": {
-                                            "dynamic": True,
-                                            "enabled": True,
-                                        }
-                                        
-                                    }
-                                }
-                            }
-                        },
-                    }
-                }
+            # ---------- Manuals vector index (text + embeddings) -----------
+            self._upsert_vector_index(
+                index_name=settings.couchbase_vector_index_name,
+                collection_name=manuals_collection,
+                embedding_dims=768,
+                text_field_name="content",
+            )
 
-                self.scope.search_indexes().upsert_index(SearchIndex.from_json(vector_index_definition))
-                logger.info(f"✅ Vector search index '{vector_index_name}' created successfully")
-                
-                
-            except Exception as e:
-                logger.error(f"❌ Failed to create vector search index: {e}")
-                logger.info("💡 Vector search will be limited without proper index")
-                
+            # ---------- Solutions vector index (solution_comment + embeddings) -----------
+            solutions_collection = settings.couchbase_collections.get("solutions")
+            if solutions_collection:
+                solutions_vector_index_name = f"semantic_{solutions_collection}"
+                self._upsert_vector_index(
+                    index_name=solutions_vector_index_name,
+                    collection_name=solutions_collection,
+                    embedding_dims=768,
+                    text_field_name="solution_comment",
+                    keyword_fields=["error_code"],
+                )
+            
         except Exception as e:
             logger.error(f"Error in vector index creation: {e}")
+
+    def _upsert_vector_index(self, index_name: str, collection_name: str, embedding_dims: int = 768, text_field_name: str = "", keyword_fields: Optional[List[str]] = None):
+        """Helper to (re)create a vector-search index for a given collection."""
+        try:
+            bucket_name = settings.couchbase_bucket_name
+            scope_name = settings.couchbase_scope_name
+
+            text_field = text_field_name or "content"
+            keyword_fields = keyword_fields or []
+
+            vector_index_definition = {
+                "type": "fulltext-index",
+                "name": index_name,
+                "sourceName": bucket_name,
+                "sourceType": "gocbcore",
+                "planParams": {"index_partitions": 1, "num_replicas": 0},
+                "params": {
+                    "doc_config": {
+                        "docid_prefix_delim": "",
+                        "docid_regexp": "",
+                        "mode": "scope.collection.type_field",
+                        "type_field": "type",
+                    },
+                    "mapping": {
+                        "default_analyzer": "standard",
+                        "default_datetime_parser": "dateTimeOptional",
+                        "default_field": "_all",
+                        "default_mapping": {"dynamic": True, "enabled": False},
+                        "default_type": "_default",
+                        "docvalues_dynamic": False,
+                        "index_dynamic": True,
+                        "store_dynamic": True,
+                        "type_field": "_type",
+                        "types": {
+                            f"{scope_name}.{collection_name}": {
+                                "dynamic": False,
+                                "enabled": True,
+                                "properties": {
+                                    f"{text_field}": {
+                                        "dynamic": False,
+                                        "enabled": True,
+                                        "fields": [
+                                            {
+                                                "store": True,
+                                                "index": True,
+                                                "name": text_field,
+                                                "type": "text",
+                                            }
+                                        ],
+                                    },
+                                    "embedding": {
+                                        "dynamic": False,
+                                        "enabled": True,
+                                        "fields": [
+                                            {
+                                                "dims": embedding_dims,
+                                                "index": True,
+                                                "name": "embedding",
+                                                "similarity": "dot_product",
+                                                "type": "vector",
+                                                "vector_index_optimized_for": "recall",
+                                            }
+                                        ],
+                                    },
+                                },
+                            }
+                        },
+                    },
+                },
+            }
+
+            # Add keyword analyzers for specified fields
+            if keyword_fields:
+                for kw in keyword_fields:
+                    vector_index_definition["params"]["mapping"]["types"][f"{scope_name}.{collection_name}"]["properties"][kw] = {
+                        "dynamic": False,
+                        "enabled": True,
+                        "fields": [
+                            {
+                                "name": kw,
+                                "type": "text",
+                                "analyzer": "keyword",
+                                "index": True,
+                                "store": True,
+                            }
+                        ],
+                    }
+
+            self.scope.search_indexes().upsert_index(SearchIndex.from_json(vector_index_definition))
+            logger.info(f"✅ Vector search index '{index_name}' created/updated successfully")
+        except Exception as err:
+            logger.error(f"Failed to upsert vector index '{index_name}': {err}")
 
     def store_document(self, key: str, document: Dict[str, Any], collection_type: str = "machines") -> bool:
         """Store a document in the appropriate collection."""

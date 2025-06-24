@@ -11,7 +11,7 @@ from couchbase.options import ClusterOptions
 from acouchbase.cluster import AsyncCluster
 from langgraph_checkpointer_couchbase import AsyncCouchbaseSaver
 
-from config import settings
+from src.config.config import settings
 
 logger = logging.getLogger(__name__)
 

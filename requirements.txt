@@ -1,5 +1,5 @@
 # Core dependencies
-couchbase==4.3.6
+couchbase==4.4.0
 langgraph==0.4.7
 langchain==0.3.25
 langchain-google-genai>=2.1.5,<3.0.0

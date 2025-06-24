@@ -11,7 +11,7 @@ from pathlib import Path
 from setup.couchbase_client import CouchbaseClient
 from setup.document_processor import DocumentProcessor
 from setup.sample_data_generator import SampleDataGenerator
-from config import settings
+from setup.deduplicate_solutions import Deduplicator
 
 # Set up logging
 logging.basicConfig(
@@ -28,6 +28,15 @@ class SystemSetup:
         self.document_processor = None
         self.sample_data_generator = None
     
+    async def __aenter__(self):
+        """Initializes components and returns the setup instance."""
+        await self.initialize_components()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Cleans up resources."""
+        self.cleanup()
+
     async def initialize_components(self):
         """Initialize all setup components."""
         logger.info("🔧 Initializing setup components...")
@@ -54,11 +63,10 @@ class SystemSetup:
             self.sample_data_generator = SampleDataGenerator(self.couchbase_client)
             
             logger.info("✅ Setup components initialized successfully!")
-            return True
             
         except Exception as e:
             logger.error(f"❌ Setup component initialization failed: {e}")
-            return False
+            raise
     
     async def process_manual_documents(self, manual_path: str = "manual.txt"):
         """Process and store manual documents."""
@@ -102,9 +110,7 @@ class SystemSetup:
         logger.info("🚀 Starting full system setup...")
         
         try:
-            # Initialize components (includes collection setup and index creation)
-            if not await self.initialize_components():
-                return False
+            # Components are initialized by __aenter__
             
             # Process manual documents
             await self.process_manual_documents(manual_path)
@@ -115,18 +121,20 @@ class SystemSetup:
             if sample_data_summary:
                 logger.info("🎉 Full system setup completed successfully!")
                 logger.info(f"Generated data summary: {sample_data_summary}")
+
+                logger.info("Deduplicating solutions...")
+                deduplicator = Deduplicator()
+                deduplicator.run()
+                logger.info("✅ Solutions deduplicated successfully!")
                 return True
             else:
                 logger.error("❌ Sample data generation failed")
+                logger.info("Skipping solutions deduplication")
                 return False
                 
         except Exception as e:
             logger.error(f"❌ Full system setup failed: {e}")
             return False
-        finally:
-            # Cleanup
-            if self.couchbase_client:
-                self.couchbase_client.close()
     
     def cleanup(self):
         """Clean up resources."""
@@ -151,30 +159,29 @@ async def main():
     
     """)
     
-    setup = SystemSetup()
-    
     try:
-        success = await setup.run_full_setup()
-        
-        if success:
-            print(f"""
-            ✅ System setup completed successfully!
+        async with SystemSetup() as setup:
+            success = await setup.run_full_setup()
             
-            Next steps:
-            1. Run the main application: python main.py
-            2. Or start the web interface: streamlit run streamlit_app.py
-            
-            The system is now ready for use!
-            """)
-        else:
-            print(f"""
-            ❌ System setup failed!
-            
-            Please check:
-            1. Couchbase Server is running
-            2. Configuration in config.py is correct
-            3. Network connectivity to Couchbase
-            """)
+            if success:
+                print(f"""
+                ✅ System setup completed successfully!
+                
+                Next steps:
+                1. Run the main application: python main.py
+                2. Or start the web interface: streamlit run streamlit_app.py
+                
+                The system is now ready for use!
+                """)
+            else:
+                print(f"""
+                ❌ System setup failed!
+                
+                Please check:
+                1. Couchbase Server is running
+                2. Configuration in config.py is correct
+                3. Network connectivity to Couchbase
+                """)
     
     except KeyboardInterrupt:
         logger.info("Setup interrupted by user")
@@ -182,8 +189,6 @@ async def main():
     except Exception as e:
         logger.error(f"Setup failed with unexpected error: {e}")
         print(f"\n❌ Setup failed: {e}")
-    finally:
-        setup.cleanup()
 
 if __name__ == "__main__":
     asyncio.run(main()) 

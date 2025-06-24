@@ -15,7 +15,7 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain.tools import Tool
 from couchbase.cluster import Cluster
 
-from config import settings
+from src.config.config import settings
 
 logger = logging.getLogger(__name__)
 

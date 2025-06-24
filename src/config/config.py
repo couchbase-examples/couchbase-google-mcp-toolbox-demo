@@ -29,7 +29,8 @@ class Settings(BaseSettings):
         "production_lines": os.getenv("COUCHBASE_COLLECTION_PROD_LINES", "production_lines"),
         "alerts": os.getenv("COUCHBASE_COLLECTION_ALERTS", "alerts"),
         "maintenance": os.getenv("COUCHBASE_COLLECTION_MAINTENANCE", "maintenance"),
-        "metrics": os.getenv("COUCHBASE_COLLECTION_METRICS", "metrics")
+        "metrics": os.getenv("COUCHBASE_COLLECTION_METRICS", "metrics"),
+        "solutions": os.getenv("COUCHBASE_COLLECTION_SOLUTIONS", "solutions")
     }
     
     # Application Configuration

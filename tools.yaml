@@ -222,6 +222,30 @@ tools:
       ORDER BY a.timestamp DESC, mr.completed_date DESC
       LIMIT 5
 
+  # Solution Management Tools
+  get-solutions-by-error-code:
+    kind: couchbase-sql
+    source: couchbase-manufacturing
+    description: 'Get past troubleshot solutions for a specific error code, including solutions not covered by the manual, aggregated from real-world troubleshooting history. Returns limited results with total count. AGENT INSTRUCTION: If total_solutions > number of returned solutions, ask the user "Would you like to see more solutions for this error code?"'
+    parameters:
+      - name: error_code
+        type: string
+        description: Error code to find solutions for
+      - name: limit_records
+        type: integer
+        description: Maximum number of solutions to return (default 10)
+    statement: |
+      SELECT 
+        (SELECT solution_id, error_code, solution_comment, created_at, updated_at
+         FROM `cpg_manufacturing`.`manufacturing`.`solutions` 
+         WHERE type = 'solution' AND error_code = $error_code
+         ORDER BY updated_at DESC 
+         LIMIT COALESCE($limit_records, 10)) as solutions,
+        (SELECT Raw COUNT(*) 
+         FROM `cpg_manufacturing`.`manufacturing`.`solutions` 
+         WHERE type = 'solution' AND error_code = $error_code)[0] as total_solutions
+
+
 # Tool Groups for Different Use Cases
 toolsets:
   production-monitoring:
@@ -243,6 +267,7 @@ toolsets:
     - get-machine-alerts
     - get-machine-context-for-alert
     - get-maintenance-history
+    - get-solutions-by-error-code
 
   maintenance-planning:
     - get-upcoming-maintenance
@@ -267,4 +292,5 @@ toolsets:
     - get-overdue-maintenance
     - get-line-efficiency
     - get-facility-overview
-    - get-machine-context-for-alert 
+    - get-machine-context-for-alert
+    - get-solutions-by-error-code

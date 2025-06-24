@@ -1,0 +1,69 @@
+[
+  {"error_code": "E001", "severity": "MEDIUM", "solution_comment": "Reset the drive and verify non-volatile memory wear levels are within specifications."},
+  {"error_code": "E001", "severity": "MEDIUM", "solution_comment": "Verify memory wear levels, then reset the drive."},
+  {"error_code": "E001", "severity": "MEDIUM", "solution_comment": "Replace the non-volatile memory module if wear exceeds 90 %."},
+
+  {"error_code": "E004", "severity": "CRITICAL", "solution_comment": "Inspect motor cooling fan and ensure unobstructed ventilation."},
+  {"error_code": "E004", "severity": "CRITICAL", "solution_comment": "Remove dust buildup from heat-sink fins to reduce motor temperature."},
+  {"error_code": "E004", "severity": "CRITICAL", "solution_comment": "Reduce load or speed until motor temperature returns to safe range."},
+
+  {"error_code": "E005", "severity": "CRITICAL", "solution_comment": "Restart the intelligent power module after checking for short circuits."},
+  {"error_code": "E005", "severity": "CRITICAL", "solution_comment": "Replace faulty gate-driver board causing IPM fault condition."},
+  {"error_code": "E005", "severity": "CRITICAL", "solution_comment": "Verify phase current sensors to rule out over-current false positives."},
+
+  {"error_code": "E009", "severity": "HIGH", "solution_comment": "Reset the drive and verify DC-bus voltage meets minimum threshold."},
+  {"error_code": "E009", "severity": "HIGH", "solution_comment": "Check upstream rectifier for blown fuses causing undervoltage."},
+  {"error_code": "E009", "severity": "HIGH", "solution_comment": "Stabilise mains supply; add power-conditioning if fluctuations persist."},
+
+  {"error_code": "E010", "severity": "HIGH", "solution_comment": "Verify braking resistor operation to dissipate regenerative energy."},
+  {"error_code": "E010", "severity": "HIGH", "solution_comment": "Measure incoming AC voltage; adjust tap settings to reduce bus overvoltage."},
+  {"error_code": "E010", "severity": "HIGH", "solution_comment": "Inspect DC-link capacitors for degradation causing voltage spikes."},
+
+  {"error_code": "E012", "severity": "HIGH", "solution_comment": "Home sensor misaligned – adjust and rerun home search routine."},
+  {"error_code": "E012", "severity": "HIGH", "solution_comment": "Remove mechanical obstructions preventing axis from reaching home position."},
+  {"error_code": "E012", "severity": "HIGH", "solution_comment": "Update motion controller firmware to improve homing reliability."},
+
+  {"error_code": "E014", "severity": "HIGH", "solution_comment": "Reseat SERCOS connectors and reboot network nodes."},
+  {"error_code": "E014", "severity": "HIGH", "solution_comment": "Replace damaged fibre-optic cable segment on DeviceNet ring."},
+  {"error_code": "E014", "severity": "HIGH", "solution_comment": "Sync network baud rate between drive and master controller."},
+
+  {"error_code": "E018", "severity": "CRITICAL", "solution_comment": "Update drive firmware to correct overspeed detection logic."},
+  {"error_code": "E018", "severity": "CRITICAL", "solution_comment": "Verify encoder resolution and scaling factors."},
+  {"error_code": "E018", "severity": "CRITICAL", "solution_comment": "Calibrate speed feedback loop to prevent false overspeed trips."},
+
+  {"error_code": "E019", "severity": "HIGH", "solution_comment": "Clear obstruction on conveyor to resolve excess position error."},
+  {"error_code": "E019", "severity": "HIGH", "solution_comment": "Tighten timing belt to maintain position accuracy."},
+  {"error_code": "E019", "severity": "HIGH", "solution_comment": "Realign linear guide rails and rerun calibration."},
+
+  {"error_code": "E022", "severity": "CRITICAL", "solution_comment": "Allow motor to cool, then reset thermal protection."},
+  {"error_code": "E022", "severity": "CRITICAL", "solution_comment": "Inspect motor temperature sensor for drift."},
+  {"error_code": "E022", "severity": "CRITICAL", "solution_comment": "Improve cabinet ventilation to lower ambient temperature."},
+
+  {"error_code": "E023", "severity": "CRITICAL", "solution_comment": "Verify IPM heatsink contact; reapply thermal compound if needed."},
+  {"error_code": "E023", "severity": "CRITICAL", "solution_comment": "Replace failed cooling fan on IPM power stage."},
+  {"error_code": "E023", "severity": "CRITICAL", "solution_comment": "Reduce duty cycle until thermal limiter no longer trips."},
+
+  {"error_code": "E024", "severity": "HIGH", "solution_comment": "Check PID gains; excessive velocity error indicates tuning issue."},
+  {"error_code": "E024", "severity": "HIGH", "solution_comment": "Lubricate linear bearings to reduce friction."},
+  {"error_code": "E024", "severity": "HIGH", "solution_comment": "Replace worn timing belt causing velocity inconsistencies."},
+
+  {"error_code": "E027", "severity": "MEDIUM", "solution_comment": "Execute homing sequence before enabling axis motion."},
+  {"error_code": "E027", "severity": "MEDIUM", "solution_comment": "Confirm limit switch wiring for axis not homed fault."},
+  {"error_code": "E027", "severity": "MEDIUM", "solution_comment": "Restore controller parameters lost after power cycle."},
+
+  {"error_code": "E030", "severity": "HIGH", "solution_comment": "Replace damaged encoder cable harness to clear comm fault."},
+  {"error_code": "E030", "severity": "HIGH", "solution_comment": "Verify encoder power supply voltage is within tolerance."},
+  {"error_code": "E030", "severity": "HIGH", "solution_comment": "Check shield grounding to reduce electrical noise on encoder lines."},
+
+  {"error_code": "E034", "severity": "CRITICAL", "solution_comment": "Inspect motor cable insulation for damage causing ground fault."},
+  {"error_code": "E034", "severity": "CRITICAL", "solution_comment": "Dry moisture inside junction box to eliminate leakage path."},
+  {"error_code": "E034", "severity": "CRITICAL", "solution_comment": "Install ground-fault monitor for early detection of insulation breakdown."},
+
+  {"error_code": "E036", "severity": "CRITICAL", "solution_comment": "Clean control cabinet filters to improve airflow across power electronics."},
+  {"error_code": "E036", "severity": "CRITICAL", "solution_comment": "Replace failed fan tray cooling the power circuitry."},
+  {"error_code": "E036", "severity": "CRITICAL", "solution_comment": "Reduce ambient temperature to within specified operating range."},
+
+  {"error_code": "E037", "severity": "CRITICAL", "solution_comment": "Check facility power supply; restore AC line to the drive."},
+
+  {"error_code": "E043", "severity": "MEDIUM", "solution_comment": "Verify drive enable signal is present on control terminal."}
+] 

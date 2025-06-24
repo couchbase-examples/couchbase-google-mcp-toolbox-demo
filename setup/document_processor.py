@@ -1,12 +1,10 @@
 import logging
-import re
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 
 # LangChain imports for document processing pipeline
 from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_couchbase.vectorstores import CouchbaseVectorStore
 from langchain_core.documents import Document
@@ -17,7 +15,8 @@ from langchain.vectorstores.base import VectorStore
 
 import numpy as np
 from .couchbase_client import CouchbaseClient
-from config import settings
+from .document_utils import extract_manufacturing_keywords
+from src.config.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -143,18 +142,7 @@ class DocumentProcessor:
     
     def _extract_keywords(self, text: str) -> List[str]:
         """Extract relevant manufacturing keywords from text."""
-        manufacturing_keywords = [
-            'pressure', 'temperature', 'speed', 'vibration', 'flow', 'motor',
-            'pump', 'valve', 'sensor', 'alarm', 'error', 'fault', 'maintenance',
-            'calibration', 'inspection', 'cleaning', 'lubrication', 'belt',
-            'bearing', 'coupling', 'gearbox', 'hydraulic', 'pneumatic',
-            'electrical', 'mechanical', 'safety', 'emergency', 'stop',
-            'start', 'operation', 'procedure', 'troubleshoot', 'repair'
-        ]
-        
-        text_lower = text.lower()
-        found_keywords = [kw for kw in manufacturing_keywords if kw in text_lower]
-        return found_keywords[:10]  # Return top 10 keywords
+        return extract_manufacturing_keywords(text)
     
     def process_manual(self, text_path: str) -> bool:
         """Process text manual using LangChain pipeline and store in Couchbase."""

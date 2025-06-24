@@ -131,7 +131,7 @@ Tip: add the binary to your `$PATH` so you can just type `genai-toolbox` from an
 
 ```bash
 # Run the system setup
-python setup_system.py
+python -m setup/setup_system.py
 ```
 
 This will:
