@@ -7,7 +7,7 @@ from typing import Optional
 
 from couchbase.auth import PasswordAuthenticator
 from couchbase.cluster import Cluster
-from couchbase.options import ClusterOptions
+from couchbase.options import ClusterOptions, KnownConfigProfiles
 from acouchbase.cluster import AsyncCluster
 from langgraph_checkpointer_couchbase import AsyncCouchbaseSaver
 
@@ -57,6 +57,7 @@ class DatabaseManager:
             settings.couchbase_password
         )
         cluster_options = ClusterOptions(auth)
+        cluster_options.apply_profile(KnownConfigProfiles.WanDevelopment)
         
         self.async_cluster = AsyncCluster(
             settings.couchbase_connection_string,

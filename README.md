@@ -131,7 +131,7 @@ Tip: add the binary to your `$PATH` so you can just type `genai-toolbox` from an
 
 ```bash
 # Run the system setup
-python -m setup/setup_system.py
+python -m setup.setup_system
 ```
 
 This will:
@@ -319,7 +319,7 @@ Different system prompts for specialized agents:
 
 ```bash
 pip install -r requirements.txt
-python setup_system.py  # Initialize database and generate sample data
+python -m setup.setup_system  # Initialize database and generate sample data
 uvicorn api:app --reload          # Start backend API (port 8000)
 streamlit run streamlit_app.py  # Start web interface (port 8501)
 
