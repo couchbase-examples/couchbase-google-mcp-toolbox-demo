@@ -81,6 +81,7 @@ def _get_tool_description() -> str:
     
     This tool searches through machine manuals to find the most relevant content for:
     • Troubleshooting procedures and error resolution
+    • Error codes and details
     • Maintenance instructions and schedules  
     • Alert explanations and corrective actions
     • Installation and setup procedures

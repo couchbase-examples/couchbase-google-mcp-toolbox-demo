@@ -144,7 +144,7 @@ class EnhancedManufacturingAgent:
     def _initialize_llm(self) -> ChatGoogleGenerativeAI:
         """Initialize the language model."""
         return ChatGoogleGenerativeAI(
-            model="gemini-2.5-pro-preview-03-25",
+            model="gemini-2.5-flash",
             temperature=0.1,
             api_key=settings.google_api_key
         )
@@ -209,9 +209,9 @@ class EnhancedManufacturingAgent:
         """Prepare all tools for a specific toolset, including manual search tools for troubleshooting."""
         all_tools = toolbox_tools
         
-        if toolset_name == "troubleshooting" and self.manual_search_tools:
+        if (toolset_name == "troubleshooting" or toolset_name == "full-manufacturing-suite") and self.manual_search_tools:
             all_tools = toolbox_tools + self.manual_search_tools
-            logger.info(f"Added {len(self.manual_search_tools)} manual search tools for troubleshooting agent")
+            logger.info(f"Added {len(self.manual_search_tools)} manual search tools for {toolset_name} agent")
             
         logger.info(f"Total tools available for toolset '{toolset_name}': {len(all_tools)}")
         return all_tools
@@ -269,24 +269,17 @@ class EnhancedManufacturingAgent:
             
             # Execute agent
             response = await react_agent.ainvoke(inputs, config=config)
-            #print(f"response: {response}")
+            print(f"response: {response}")
             # Extract and return response
-            ai_message_content = self._extract_response_content(response)
-            logger.info(f"Agent Node ({toolset_key}): Response: {ai_message_content[:100]}...")
+            final_message = response["messages"][-1]
+            logger.info(f"Agent Node ({toolset_key}): Response: {final_message.content[:100]}...")
             
-            return {"messages": [AIMessage(content=ai_message_content)]}
+            return {"messages": [final_message]}
         
         except Exception as e:
             error_msg = f"Error executing agent for toolset {toolset_key}: {str(e)}"
             logger.error(error_msg, exc_info=True)
             return {"messages": [AIMessage(content=error_msg)]}
-
-    def _extract_response_content(self, response: Dict[str, Any]) -> str:
-        """Extract content from agent response."""
-        if response and "messages" in response and response["messages"]:
-            final_message = response["messages"][-1]
-            return getattr(final_message, 'content', str(final_message))
-        return "Could not extract response."
 
     def _create_agent_node_method(self, toolset_key: str) -> Callable:
         """Create an agent node method for a specific toolset."""
@@ -322,10 +315,7 @@ class EnhancedManufacturingAgent:
             conditional_path_map
         )
         
-        return workflow.compile(
-            checkpointer=self.checkpointer, 
-            #debug=True
-        )
+        return workflow.compile()
 
     async def process_query(self, operator_query: OperatorQuery) -> AIResponse:
         """
