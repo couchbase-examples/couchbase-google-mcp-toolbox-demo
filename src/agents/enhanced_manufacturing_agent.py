@@ -218,13 +218,13 @@ class EnhancedManufacturingAgent:
 
     def _build_react_agent(self, tools: List[Any], system_prompt: str) -> Any:
         """Build a ReAct agent with the given tools and system prompt."""
-        react_agent_memory = MemorySaver()
+        #react_agent_memory = MemorySaver()
         return create_react_agent(
             model=self.llm,
             tools=tools,
-            checkpointer=react_agent_memory,
+            checkpointer=self.checkpointer,
             prompt=system_prompt,
-            debug=True
+            #debug=True
         )
 
     def _get_node_name(self, toolset_name: str) -> str:
@@ -265,6 +265,7 @@ class EnhancedManufacturingAgent:
             thread_id = f"react_agent_thread_{operator_query.operator_id}_{toolset_key}"
             config = {"configurable": {"thread_id": thread_id}}
             inputs = {"messages": state['messages']}
+            #print(f"inputs: {state['messages']}")
             
             # Execute agent
             response = await react_agent.ainvoke(inputs, config=config)
@@ -321,7 +322,10 @@ class EnhancedManufacturingAgent:
             conditional_path_map
         )
         
-        return workflow.compile(checkpointer=self.checkpointer, debug=True)
+        return workflow.compile(
+            checkpointer=self.checkpointer, 
+            #debug=True
+        )
 
     async def process_query(self, operator_query: OperatorQuery) -> AIResponse:
         """

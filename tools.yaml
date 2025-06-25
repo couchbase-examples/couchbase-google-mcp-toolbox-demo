@@ -234,7 +234,14 @@ tools:
       - name: limit_records
         type: integer
         description: Maximum number of solutions to return (default 10)
-    statement: SELECT (SELECT solution_id, error_code, solution_comment, created_at, updated_at FROM `cpg_manufacturing`.`manufacturing`.`solutions` WHERE type = 'solution' AND error_code = $error_code ORDER BY updated_at DESC LIMIT COALESCE($limit_records, 10)) as solutions, (SELECT Raw COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`solutions` WHERE type = 'solution' AND error_code = $error_code)[0] as total_solutions
+    statement: |
+      SELECT 
+        (SELECT solution_id, error_code, solution_comment, created_at, updated_at 
+         FROM `cpg_manufacturing`.`manufacturing`.`solutions` 
+         WHERE type = 'solution' AND error_code = $error_code 
+         ORDER BY updated_at DESC 
+         LIMIT COALESCE($limit_records, 10)) as solutions,
+        (SELECT Raw COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`solutions` WHERE type = 'solution' AND error_code = $error_code)[0] as total_solutions
 
 # Tool Groups for Different Use Cases
 toolsets:

@@ -96,8 +96,6 @@ class OperatorQuery(BaseModel):
     """Operator query to the AI assistant."""
     query_id: str = Field(..., description="Unique query identifier")
     operator_id: str = Field(..., description="Operator making the query")
-    production_line_id: str = Field(..., description="Production line context")
-    machine_id: Optional[str] = Field(None, description="Specific machine if applicable")
     query_text: str = Field(..., description="The operator's question or issue")
     query_type: str = Field(..., description="Type of query (troubleshooting, maintenance, etc.)")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Query timestamp")

@@ -170,13 +170,12 @@ def reset_chat_for_new_agent():
     st.session_state.chat_session_id = str(uuid.uuid4())
 
 
-def process_message_via_api(user_input: str, selected_line: str, machine_id: str, query_type: str):
+def process_message_via_api(user_input: str, query_type: str):
     """Process user message by calling the backend API."""
+    logger.info(f"chat_session_id: {st.session_state.chat_session_id}")
     payload = {
         "user_input": user_input,
         "chat_session_id": st.session_state.chat_session_id,
-        "selected_line": selected_line,
-        "machine_id": machine_id,
         "query_type": query_type
     }
 
@@ -196,12 +195,7 @@ def process_message_via_api(user_input: str, selected_line: str, machine_id: str
         return f"An unexpected error occurred: {str(e)}"
 
 
-def display_chat_messages():
-    """Display chat messages using Streamlit's native chat elements."""
-    st.subheader("💬 Continuous Manufacturing Support Chat")
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+# display_chat_messages function removed - now integrated directly into render_chat_interface
 
 
 def render_sidebar():
@@ -275,43 +269,40 @@ def render_chat_interface(system_online, agent_type):
     col1, col2 = st.columns([4, 1])
     
     with col1:
-        display_chat_messages()
+        # Chat section
+        st.subheader("💬 Continuous Manufacturing Support Chat")
+        
+        # Create a container for messages only
+        messages_container = st.container()
+        with messages_container:
+            for message in st.session_state.messages:
+                with st.chat_message(message["role"]):
+                    st.markdown(message["content"])
 
-        # Quick suggestions
-        st.write("💡 **Quick Questions:**")
-        suggestions = [
-            "What's the status of all machines?",
-            "Help with temperature alert",
-            "Show maintenance schedule",
-            "Troubleshoot conveyor issue",
-            "Production efficiency report"
-        ]
+    # Move Quick Questions and input OUTSIDE the columns to prevent duplication
+    st.write("💡 **Quick Questions:**")
+    cols = st.columns(5)
+    suggestions = [
+        "What's the status of all machines?",
+        "Help with temperature alert",
+        "Show maintenance schedule",
+        "Troubleshoot conveyor issue",
+        "Production efficiency report"
+    ]
 
-        cols = st.columns(len(suggestions))
-        user_clicked_suggestion = None
-        for i, suggestion in enumerate(suggestions):
-            if cols[i].button(suggestion, key=f"suggest_{i}", use_container_width=True):
-                user_clicked_suggestion = suggestion
+    user_clicked_suggestion = None
+    for i, suggestion in enumerate(suggestions):
+        if cols[i].button(suggestion, key=f"suggest_{i}", use_container_width=True):
+            user_clicked_suggestion = suggestion
+            break
 
-        st.divider()
+    # Chat input
+    if user_input := st.chat_input("Ask about machines, troubleshooting, maintenance, or production..."):
+        handle_user_input(user_input, system_online, agent_type)
+    elif user_clicked_suggestion:
+        handle_user_input(user_clicked_suggestion, system_online, agent_type)
 
-        # Chat input form
-        with st.form(key="chat_form", clear_on_submit=True):
-            col_input, col_send = st.columns([4, 1])
-            with col_input:
-                user_typed_input = st.text_input(
-                    "Type your message...",
-                    placeholder="Ask about machines, troubleshooting, maintenance, or production...",
-                    label_visibility="collapsed"
-                )
-            with col_send:
-                send_button = st.form_submit_button("Send 🚀", use_container_width=True)
-
-        # Process user input
-        user_input = user_clicked_suggestion or (user_typed_input if send_button else None)
-        if user_input:
-            handle_user_input(user_input, system_online, agent_type)
-
+    # System status in sidebar
     with col2:
         render_system_status_panel(system_online)
 
@@ -324,15 +315,13 @@ def handle_user_input(user_input, system_online, agent_type):
         if system_online:
             ai_response = process_message_via_api(
                 user_input,
-                selected_line="N/A",
-                machine_id="",
                 query_type=agent_type
             )
         else:
             ai_response = "The backend API is offline. Please start the API server to enable the AI assistant."
     
     add_message("assistant", ai_response, agent_type)
-    st.rerun()
+    st.rerun()  # Need this to immediately display the new messages
 
 
 def render_system_status_panel(system_online):

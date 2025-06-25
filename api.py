@@ -131,8 +131,6 @@ async def process_query_endpoint(request: QueryRequest):
         operator_query = OperatorQuery(
             query_id=str(uuid.uuid4()),
             operator_id=f"chat_{request.chat_session_id}",
-            production_line_id=request.selected_line,
-            machine_id=request.machine_id,
             query_text=request.user_input,
             query_type=request.query_type
         )
