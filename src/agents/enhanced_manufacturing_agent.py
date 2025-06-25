@@ -265,11 +265,11 @@ class EnhancedManufacturingAgent:
             thread_id = f"react_agent_thread_{operator_query.operator_id}_{toolset_key}"
             config = {"configurable": {"thread_id": thread_id}}
             inputs = {"messages": state['messages']}
-            #print(f"inputs: {state['messages']}")
+            #print(f"inputs: {state}")
             
             # Execute agent
             response = await react_agent.ainvoke(inputs, config=config)
-            
+            #print(f"response: {response}")
             # Extract and return response
             ai_message_content = self._extract_response_content(response)
             logger.info(f"Agent Node ({toolset_key}): Response: {ai_message_content[:100]}...")
@@ -348,9 +348,7 @@ class EnhancedManufacturingAgent:
             )
             
             # Execute graph
-            thread_id = f"graph_thread_{operator_query.operator_id}_{uuid.uuid4()}"
-            config = {"configurable": {"thread_id": thread_id}}
-            final_state = await self.graph.ainvoke(initial_state, config=config)
+            final_state = await self.graph.ainvoke(initial_state)
             
             # Extract and return response
             response_text = self._extract_final_response(final_state)
