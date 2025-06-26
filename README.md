@@ -70,7 +70,11 @@ graph TD
     API -- "sends OperatorQuery" --> EnhancedAgent
     
     %% State Persistence
-    EnhancedAgent -- "Persists conversation state" --> Checkpointer
+    TroubleshootAgent -- "Persists state" --> Checkpointer
+    MaintenanceAgent -- "Persists state" --> Checkpointer
+    MonitorAgent -- "Persists state" --> Checkpointer
+    PerformanceAgent -- "Persists state" --> Checkpointer
+    GeneralAgent -- "Persists state" --> Checkpointer
     Checkpointer -- "R/W state" --> CouchbaseDB
 
     %% Styling
