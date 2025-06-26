@@ -23,7 +23,7 @@ graph TD
     end
 
     subgraph "Agent Orchestration (LangGraph)"
-        ManufacturingAgent["**Multi-Agent System**<br/>Routes user queries to a specialized agent<br/>(e.g., Troubleshooting, Maintenance) for resolution."]
+        ManufacturingAgent["**Agent Orchestrator**<br/>Routes user queries to a specialized agent<br/>(e.g., Troubleshooting, Maintenance) for resolution."]
     end
 
     subgraph "Tool Layer"
