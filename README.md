@@ -240,10 +240,8 @@ erDiagram
     MACHINES ||--o{ ALERTS : generates
     MACHINES ||--o{ MAINTENANCE : requires
     PRODUCTION_LINES ||--o{ METRICS : produces
-    MANUALS ||--o{ MANUAL_CHUNKS : contains
-    MANUAL_CHUNKS ||--|| VECTOR_EMBEDDINGS : has
-    ALERTS ||--o{ SOLUTIONS : "generates solutions via AI optimization"
-    SOLUTIONS ||--|| VECTOR_EMBEDDINGS : has
+    MANUALS ||--o{ MANUAL_CHUNKS WITH_EMBEDDINGS : contains
+    ALERTS ||--o{ SOLUTIONS WITH EMBEDDINGS : derives
 ```
 
 ### Collection Types
@@ -254,6 +252,7 @@ erDiagram
 - **maintenance**: Maintenance records, schedules, and history
 - **metrics**: Production metrics and performance data
 - **manuals**: Processed manual content with vector embeddings
+- **solutions**: AI-optimized manufacturing solutions with vector embeddings for semantic search
 
 ## 🔧 Configuration
 
@@ -269,7 +268,8 @@ couchbase_collections = {
     "production_lines": "production_lines",
     "alerts": "alerts",
     "maintenance": "maintenance",
-    "metrics": "metrics"
+    "metrics": "metrics",
+    "solutions": "solutions"
 }
 ```
 
