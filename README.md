@@ -17,46 +17,72 @@ This demo combines the **GenAI Toolbox MCP (Multi-Collection Provider) server** 
 ## 🏗️ Architecture Overview
 
 ```mermaid
-graph TB
-    subgraph "👥 User Interface"
-        WebApp["🌐 Web Application<br/>(Streamlit)"]
+graph TD
+    subgraph "API Layer"
+        API["FastAPI Backend (api.py)"]
+    end
+
+    subgraph "Agent Orchestration (LangGraph)"
+        direction LR
+        EnhancedAgent["EnhancedManufacturingAgent.process_query()"] -- "Invokes graph" --> Router{"Router<br/>(on query_type)"}
+        
+        subgraph "Specialized ReAct Agents (Nodes)"
+            direction TB
+            TroubleshootAgent["Troubleshooting Agent"]
+            MaintenanceAgent["Maintenance Agent"]
+            MonitorAgent["Monitoring Agent"]
+            PerformanceAgent["Performance Agent"]
+            GeneralAgent["General Agent"]
+        end
+
+        Router -- "troubleshooting" --> TroubleshootAgent
+        Router -- "maintenance" --> MaintenanceAgent
+        Router -- "monitoring" --> MonitorAgent
+        Router -- "performance" --> PerformanceAgent
+        Router -- "general" --> GeneralAgent
+    end
+
+    subgraph "Tool Layer"
+        direction TB
+        Toolbox["GenAI Toolbox Tools<br/>(SQL-based via MCP Server)"]
+        ManualSearch["Manual Search Tool<br/>(Vector Search)"]
     end
     
-    subgraph "🤖 AI Agent System"
-        AIAssistant["🧠 Manufacturing AI Assistant<br/>(LangGraph Agents)"]
+    subgraph "Data & State Persistence"
+        CouchbaseDB["Couchbase Database"]
+        Checkpointer["AsyncCouchbaseSaver<br/>(LangGraph Checkpointer)"]
     end
+
+    %% Connections from Agents to Tools
+    TroubleshootAgent --> Toolbox
+    TroubleshootAgent --> ManualSearch
+    MaintenanceAgent --> Toolbox
+    MonitorAgent --> Toolbox
+    PerformanceAgent --> Toolbox
+    GeneralAgent --> Toolbox
+    GeneralAgent --> ManualSearch
+
+    %% Connections from Tools to Data
+    Toolbox --> CouchbaseDB
+    ManualSearch --> CouchbaseDB
+
+    %% Connection from API to Agent
+    API -- "sends OperatorQuery" --> EnhancedAgent
     
-    subgraph "⚙️ Tool Integration"
-        GenAIToolbox["🛠️ Google GenAI Toolbox<br/>(MCP Server)"]
-    end
-    
-    subgraph "🗄️ Data Layer"
-        Couchbase["📊 Couchbase Database<br/>(Vector Search + Collections)"]
-    end
-    
-    subgraph "🔍 Knowledge Base"
-        ManualSearch["📖 Manual Search<br/>(Google AI Embeddings)"]
-    end
-    
-    %% Connections
-    WebApp --> AIAssistant
-    AIAssistant --> GenAIToolbox
-    AIAssistant --> ManualSearch
-    GenAIToolbox --> Couchbase
-    ManualSearch --> Couchbase
-    
+    %% State Persistence
+    EnhancedAgent -- "Persists conversation state" --> Checkpointer
+    Checkpointer -- "R/W state" --> CouchbaseDB
+
     %% Styling
-    classDef ui fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
-    classDef ai fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
-    classDef tools fill:#fff8e1,stroke:#f57c00,stroke-width:3px
-    classDef data fill:#e8f5e8,stroke:#388e3c,stroke-width:3px
-    classDef knowledge fill:#fce4ec,stroke:#c2185b,stroke-width:3px
+    classDef api fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef agent fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef tools fill:#fff8e1,stroke:#f57c00,stroke-width:2px
+    classDef data fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     
-    class WebApp ui
-    class AIAssistant ai
-    class GenAIToolbox tools
-    class Couchbase data
-    class ManualSearch knowledge
+    class API,EnhancedAgent,Router,TroubleshootAgent,MaintenanceAgent,MonitorAgent,PerformanceAgent,GeneralAgent agent
+    class Toolbox,ManualSearch tools
+    class CouchbaseDB,Checkpointer data
+    class API api
 ```
 
 ## 🚀 Quick Start
