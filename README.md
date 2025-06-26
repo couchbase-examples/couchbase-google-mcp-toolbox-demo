@@ -23,23 +23,7 @@ graph TD
     end
 
     subgraph "Agent Orchestration (LangGraph)"
-        direction LR
-        EnhancedAgent["EnhancedManufacturingAgent.process_query()"] -- "Invokes graph" --> Router{"Router<br/>(on query_type)"}
-        
-        subgraph "Specialized ReAct Agents (Nodes)"
-            direction TB
-            TroubleshootAgent["Troubleshooting Agent"]
-            MaintenanceAgent["Maintenance Agent"]
-            MonitorAgent["Monitoring Agent"]
-            PerformanceAgent["Performance Agent"]
-            GeneralAgent["General Agent"]
-        end
-
-        Router -- "troubleshooting" --> TroubleshootAgent
-        Router -- "maintenance" --> MaintenanceAgent
-        Router -- "monitoring" --> MonitorAgent
-        Router -- "performance" --> PerformanceAgent
-        Router -- "general" --> GeneralAgent
+        ManufacturingAgent["**Multi-Agent System**<br/>Routes user queries to a specialized agent<br/>(e.g., Troubleshooting, Maintenance) for resolution."]
     end
 
     subgraph "Tool Layer"
@@ -53,28 +37,14 @@ graph TD
         Checkpointer["AsyncCouchbaseSaver<br/>(LangGraph Checkpointer)"]
     end
 
-    %% Connections from Agents to Tools
-    TroubleshootAgent --> Toolbox
-    TroubleshootAgent --> ManualSearch
-    MaintenanceAgent --> Toolbox
-    MonitorAgent --> Toolbox
-    PerformanceAgent --> Toolbox
-    GeneralAgent --> Toolbox
-    GeneralAgent --> ManualSearch
-
-    %% Connections from Tools to Data
+    %% Connections
+    API -- "sends OperatorQuery" --> ManufacturingAgent
+    ManufacturingAgent -- "Uses Tools" --> Toolbox
+    ManufacturingAgent -- "Uses Tools" --> ManualSearch
+    ManufacturingAgent -- "Persists state" --> Checkpointer
+    
     Toolbox --> CouchbaseDB
     ManualSearch --> CouchbaseDB
-
-    %% Connection from API to Agent
-    API -- "sends OperatorQuery" --> EnhancedAgent
-    
-    %% State Persistence
-    TroubleshootAgent -- "Persists state" --> Checkpointer
-    MaintenanceAgent -- "Persists state" --> Checkpointer
-    MonitorAgent -- "Persists state" --> Checkpointer
-    PerformanceAgent -- "Persists state" --> Checkpointer
-    GeneralAgent -- "Persists state" --> Checkpointer
     Checkpointer -- "R/W state" --> CouchbaseDB
 
     %% Styling
@@ -83,10 +53,10 @@ graph TD
     classDef tools fill:#fff8e1,stroke:#f57c00,stroke-width:2px
     classDef data fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     
-    class API,EnhancedAgent,Router,TroubleshootAgent,MaintenanceAgent,MonitorAgent,PerformanceAgent,GeneralAgent agent
+    class API api
+    class ManufacturingAgent agent
     class Toolbox,ManualSearch tools
     class CouchbaseDB,Checkpointer data
-    class API api
 ```
 
 ## 🚀 Quick Start
