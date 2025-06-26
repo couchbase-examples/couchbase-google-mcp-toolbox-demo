@@ -16,6 +16,7 @@ This demo combines the **GenAI Toolbox MCP (Multi-Collection Provider) server** 
 
 ## 🏗️ Architecture Overview
 
+```mermaid
 graph TB
     subgraph "👥 User Interface"
         A["🌐 Web Application<br/>(Streamlit)"]
@@ -56,6 +57,7 @@ graph TB
     class C tools
     class D data
     class E knowledge
+```
 
 ## 🚀 Quick Start
 
