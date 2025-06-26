@@ -240,8 +240,8 @@ erDiagram
     MACHINES ||--o{ ALERTS : generates
     MACHINES ||--o{ MAINTENANCE : requires
     PRODUCTION_LINES ||--o{ METRICS : produces
-    MANUALS ||--o{ MANUAL_CHUNKS WITH_EMBEDDINGS : contains
-    ALERTS ||--o{ SOLUTIONS WITH EMBEDDINGS : derives
+    MANUALS ||--o{ MANUAL_CHUNKS : contains
+    ALERTS ||--o{ SOLUTIONS : derives
 ```
 
 ### Collection Types
