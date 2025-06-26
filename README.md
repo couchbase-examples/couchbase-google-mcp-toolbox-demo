@@ -11,8 +11,6 @@ This demo combines the **GenAI Toolbox MCP (Multi-Collection Provider) server** 
 - **🔍 Semantic Manual Search** – Vector embeddings let operators retrieve the most relevant manual snippets for a given issue (exposed only to the agents that need it).
 - **💾 Resilient State & Replay** – `langgraph-checkpointer-couchbase` persists every agent step in Couchbase so conversations can resume or be audited later.
 - **⚡ High Throughput** – Connection pooling, async I/O and caching across database, embeddings and tool calls keep latency low even under load.
-- **🔒 Enterprise-Grade Security** – Centralized MCP server + scoped credentials; no direct DB creds in the web tier.
-
 
 ## 🏗️ Architecture Overview
 
