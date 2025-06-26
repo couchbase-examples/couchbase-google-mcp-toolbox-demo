@@ -13,58 +13,49 @@ This demo combines the **GenAI Toolbox MCP (Multi-Collection Provider) server** 
 • **⚡ High Throughput** – Connection pooling, async I/O and caching across database, embeddings and tool calls keep latency low even under load.
 • **🔒 Enterprise-Grade Security** – Centralized MCP server + scoped credentials; no direct DB creds in the web tier.
 
+
 ## 🏗️ Architecture Overview
 
-```mermaid
 graph TB
-    subgraph "Web Interface"
-        A[Streamlit Web App] --> B[FastAPI Backend]
+    subgraph "👥 User Interface"
+        A["🌐 Web Application<br/>(Streamlit)"]
     end
     
-    subgraph "AI Layer"
-        B --> C[Enhanced Manufacturing Agent]
+    subgraph "🤖 AI Agent System"
+        B["🧠 Manufacturing AI Assistant<br/>(LangGraph Agents)"]
     end
     
-    subgraph "Agent Types"
-        F[Troubleshooting Agent] --> G[LangGraph ReAct Agent]
-        H[Maintenance Agent] --> G
-        I[Monitoring Agent] --> G
-        J[Performance Agent] --> G
-        K[General Agent] --> G
+    subgraph "⚙️ Tool Integration"
+        C["🛠️ Google GenAI Toolbox<br/>(MCP Server)"]
     end
     
-    subgraph "Database"
-        L[Couchbase Cluster]
+    subgraph "🗄️ Data Layer"
+        D["📊 Couchbase Database<br/>(Vector Search + Collections)"]
     end
     
-    subgraph "Toolbox Integration"
-        D[GenAI Toolbox MCP Server] --> Q[Production Tools]
-        D --> R[Machine Management Tools]
-        D --> S[Alert Management Tools]
-        D --> T[Maintenance Tools]
+    subgraph "🔍 Knowledge Base"
+        E["📖 Manual Search<br/>(Google AI Embeddings)"]
     end
     
-    C --> F
-    C --> H
-    C --> I
-    C --> J
-    C --> K
-    G --> U[langgraph-checkpointer-couchbase]
-    U --> L 
-    E[Couchbase Manual Retriever] --> L
-    D --> L
-
-    %% Agents access toolsets via MCP server
-    F --> D
-    H --> D
-    I --> D
-    J --> D
-    K --> D
-
-    %% Manual search available only to troubleshooting and general agents
-    F --> E
-    K --> E
-```
+    %% Connections
+    A --> B
+    B --> C
+    B --> E
+    C --> D
+    E --> D
+    
+    %% Styling
+    classDef ui fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
+    classDef ai fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
+    classDef tools fill:#fff8e1,stroke:#f57c00,stroke-width:3px
+    classDef data fill:#e8f5e8,stroke:#388e3c,stroke-width:3px
+    classDef knowledge fill:#fce4ec,stroke:#c2185b,stroke-width:3px
+    
+    class A ui
+    class B ai
+    class C tools
+    class D data
+    class E knowledge
 
 ## 🚀 Quick Start
 
@@ -390,6 +381,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**Built with ❤️ for Manufacturing Excellence**
+## Built with ❤️ for Manufacturing Excellence
 
 This demo showcases how Google GenAI Toolbox combined with Couchbase's powerful vector search capabilities revolutionizes manufacturing operations through intelligent, context-aware troubleshooting assistance. The modular architecture ensures scalability, maintainability, and seamless integration with enterprise manufacturing systems.
