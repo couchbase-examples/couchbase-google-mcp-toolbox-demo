@@ -19,31 +19,31 @@ This demo combines the **GenAI Toolbox MCP (Multi-Collection Provider) server** 
 ```mermaid
 graph TB
     subgraph "👥 User Interface"
-        A["🌐 Web Application<br/>(Streamlit)"]
+        WebApp["🌐 Web Application<br/>(Streamlit)"]
     end
     
     subgraph "🤖 AI Agent System"
-        B["🧠 Manufacturing AI Assistant<br/>(LangGraph Agents)"]
+        AIAssistant["🧠 Manufacturing AI Assistant<br/>(LangGraph Agents)"]
     end
     
     subgraph "⚙️ Tool Integration"
-        C["🛠️ Google GenAI Toolbox<br/>(MCP Server)"]
+        GenAIToolbox["🛠️ Google GenAI Toolbox<br/>(MCP Server)"]
     end
     
     subgraph "🗄️ Data Layer"
-        D["📊 Couchbase Database<br/>(Vector Search + Collections)"]
+        Couchbase["📊 Couchbase Database<br/>(Vector Search + Collections)"]
     end
     
     subgraph "🔍 Knowledge Base"
-        E["📖 Manual Search<br/>(Google AI Embeddings)"]
+        ManualSearch["📖 Manual Search<br/>(Google AI Embeddings)"]
     end
     
     %% Connections
-    A --> B
-    B --> C
-    B --> E
-    C --> D
-    E --> D
+    WebApp --> AIAssistant
+    AIAssistant --> GenAIToolbox
+    AIAssistant --> ManualSearch
+    GenAIToolbox --> Couchbase
+    ManualSearch --> Couchbase
     
     %% Styling
     classDef ui fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
@@ -52,11 +52,11 @@ graph TB
     classDef data fill:#e8f5e8,stroke:#388e3c,stroke-width:3px
     classDef knowledge fill:#fce4ec,stroke:#c2185b,stroke-width:3px
     
-    class A ui
-    class B ai
-    class C tools
-    class D data
-    class E knowledge
+    class WebApp ui
+    class AIAssistant ai
+    class GenAIToolbox tools
+    class Couchbase data
+    class ManualSearch knowledge
 ```
 
 ## 🚀 Quick Start
