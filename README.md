@@ -1,10 +1,10 @@
-# CPG Manufacturing AI Assistant Demo with Google GenAI Toolbox & Couchbase Integration
+# CPG Manufacturing AI Assistant Demo with Google MCP Toolbox for Databases & Couchbase Integration
 
-A comprehensive demonstration of a Consumer Packaged Goods (CPG) manufacturing system that uses **Couchbase**, **LangGraph**, and **Google GenAI Toolbox** to address unplanned production line downtime and reduce Mean Time To Resolution (MTTR).
+A comprehensive demonstration of a Consumer Packaged Goods (CPG) manufacturing system that uses **Couchbase**, **LangGraph**, and **Google MCP Toolbox for Databases** to address unplanned production line downtime and reduce Mean Time To Resolution (MTTR).
 
 ## 🌟 Key Features
 
-This demo combines the **GenAI Toolbox MCP (Multi-Collection Provider) server** with **Couchbase Vector Search** and **LangGraph** to deliver:
+This demo combines the **MCP Toolbox for Databases MCP (Multi-Collection Provider) server** with **Couchbase Vector Search** and **LangGraph** to deliver:
 
 - **🧰 Natural-Language Tool Access** – The MCP server turns every SQL query in `tools.yaml` into a REST/LLM-friendly tool that agents can invoke with plain English.
 - **🎯 Specialized Multi-Tool Agents** – Four specialized LangGraph ReAct agents (troubleshooting, maintenance, monitoring, performance) plus a general agent that auto-select the right toolset; troubleshooting and general agents additionally tap the manual semantic-search tool.
@@ -26,7 +26,7 @@ graph TD
 
     subgraph "Tool Layer"
         direction TB
-        Toolbox["GenAI Toolbox Tools<br/>(SQL-based via MCP Server)"]
+        Toolbox["MCP Toolbox for Databases Tools<br/>(SQL-based via MCP Server)"]
         ManualSearch["Manual Search Tool<br/>(Vector Search)"]
     end
     
@@ -82,7 +82,7 @@ Key dependencies include:
 - `couchbase==4.4.0` for database connectivity
 - `langgraph==0.4.7` for agent orchestration
 - `langchain-google-genai>=2.1.5` for Google AI integration
-- `toolbox-langchain==0.2.0` for GenAI Toolbox integration
+- `toolbox-langchain==0.2.0` for MCP Toolbox for Databases integration
 - `langgraph-checkpointer-couchbase>=1.0.6` for state persistence
 
 ### 2. Configure Environment
@@ -104,9 +104,9 @@ APP_NAME=CPG Manufacturing AI Assistant
 DEBUG=true
 ```
 
-### 3. Start the GenAI Toolbox MCP Server
+### 3. Start the MCP Toolbox for Databases MCP Server
 
-The GenAI Toolbox **MCP (Multi-Collection Provider) server** exposes all database tools defined in `tools.yaml`.  
+The MCP Toolbox for Databases **MCP (Multi-Collection Provider) server** exposes all database tools defined in `tools.yaml`.  
 Make sure you have `tools.yaml` configured with the correct Couchbase connection string, username and password first.
 
 ```bash
@@ -197,7 +197,7 @@ agent = create_manufacturing_agent(
 )
 ```
 
-## 🧰 GenAI Toolbox Integration
+## 🧰 MCP Toolbox for Databases Integration
 
 ### Available Toolsets
 
@@ -242,6 +242,8 @@ erDiagram
     PRODUCTION_LINES ||--o{ METRICS : produces
     MANUALS ||--o{ MANUAL_CHUNKS : contains
     MANUAL_CHUNKS ||--|| VECTOR_EMBEDDINGS : has
+    ALERTS ||--o{ SOLUTIONS : "generates solutions via AI optimization"
+    SOLUTIONS ||--|| VECTOR_EMBEDDINGS : has
 ```
 
 ### Collection Types
@@ -315,7 +317,7 @@ Different system prompts for specialized agents:
 # 1. Install dependencies
 pip install -r requirements.txt
 
-# 2. Start GenAI Toolbox MCP Server (in separate terminal)
+# 2. Start MCP Toolbox for Databases MCP Server (in separate terminal)
 genai-toolbox --tools-file tools.yaml --port 5000
 
 # 3. Initialize database and generate sample data
@@ -340,7 +342,7 @@ The system tracks comprehensive metrics:
 
 - **Agent Performance**: Response time and accuracy
 - **Database Performance**: Query execution time and connection health
-- **Tool Usage**: GenAI Toolbox tool execution statistics
+- **Tool Usage**: MCP Toolbox for Databases tool execution statistics
 - **Manual Search**: Vector search relevance and speed
 - **System Health**: Overall availability and error rates
 
@@ -365,7 +367,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🙏 Acknowledgments
 
-- **Google GenAI Toolbox Team**: For the powerful database integration framework
+- **Google MCP Toolbox for Databases Team**: For the powerful database integration framework
 - **Couchbase**: For the scalable NoSQL database platform with vector search
 - **LangChain/LangGraph**: For the AI agent orchestration framework
 - **Google AI**: For the Gemini language model and embedding capabilities
@@ -373,7 +375,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 📚 Additional Resources
 
-- [Google GenAI Toolbox Documentation](https://googleapis.github.io/genai-toolbox/)
+- [Google MCP Toolbox for Databases Documentation](https://googleapis.github.io/genai-toolbox/)
 - [Couchbase Vector Search Documentation](https://docs.couchbase.com/server/current/vector-search/vector-search.html)
 - [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
 - [Google AI for Developers](https://ai.google.dev/)
@@ -383,4 +385,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Built with ❤️ for Manufacturing Excellence
 
-This demo showcases how Google GenAI Toolbox combined with Couchbase's powerful vector search capabilities revolutionizes manufacturing operations through intelligent, context-aware troubleshooting assistance. The modular architecture ensures scalability, maintainability, and seamless integration with enterprise manufacturing systems.
+This demo showcases how Google MCP Toolbox for Databases combined with Couchbase's powerful vector search capabilities revolutionizes manufacturing operations through intelligent, context-aware troubleshooting assistance. The modular architecture ensures scalability, maintainability, and seamless integration with enterprise manufacturing systems.

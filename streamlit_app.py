@@ -6,7 +6,6 @@ import httpx
 
 # Configuration
 API_URL = "http://127.0.0.1:8000"
-DEFAULT_TOOLBOX_URL = "http://127.0.0.1:5000"
 REQUEST_TIMEOUT = 120.0
 
 # Set up logging
@@ -219,14 +218,6 @@ def render_sidebar():
             {agent_descriptions.get(agent_type_selection, agent_descriptions["general"])}
         </div>
         """, unsafe_allow_html=True)
-
-        # Advanced settings
-        with st.expander("⚙️ Advanced Settings"):
-            toolbox_url_selection = st.text_input(
-                "GenAI Toolbox URL",
-                value=DEFAULT_TOOLBOX_URL,
-                key="toolbox_url_input"
-            )
 
         st.divider()
 
