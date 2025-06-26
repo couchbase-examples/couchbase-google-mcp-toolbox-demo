@@ -335,10 +335,12 @@ uvicorn api:app --reload --host 0.0.0.0 --port 8000
 
 # 5. Start web interface (in separate terminal)
 streamlit run streamlit_app.py
-```
 
-### Alternative: API Only
+# Generate machine status report with alerts from last 24 hours
+python -m setup.list_machine_alerts
 
+# Generate report for custom time period (e.g., last 48 hours)
+python -m setup.list_machine_alerts 48
 ```
 
 ## 📈 Performance Metrics
