@@ -5,15 +5,28 @@ graph TD
     A --> E[Production Metrics]
     A --> F[Shift Reports]
     G[Operators] --> H[Operator Queries]
-    H --> I[AI Responses]
-    J[Manual Chunks] --> I
-    C --> I
-    D --> I
+    H --> I[AI Agent Router]
+    I --> J[Specialized Agents]
+    J --> K[AI Responses]
+    L[Manual Chunks] --> K
+    C --> K
+    D --> K
+    M[Solutions Collection] --> K
+    C --> N[Solution Optimizer]
+    N --> M
+    L --> O[Vector Search Index]
+    M --> P[Vector Search Index]
+    O --> K
+    P --> K
     
     style A fill:#e1f5fe
     style B fill:#f3e5f5
     style C fill:#ffebee
     style D fill:#e8f5e8
+    style M fill:#fff3e0
+    style N fill:#f1f8e9
+    style I fill:#e8eaf6
+    style J fill:#fce4ec
 
 
 
@@ -40,7 +53,7 @@ Alert:
   - severity: "high"
   - title: "High Temperature Warning"
   - error_code: "E001"
-
+  - solution_comment: "Check cooling system and clean filters"  # Used for AI optimization
 
 3. Machines → Maintenance Records (One-to-Many)
 MaintenanceRecord:
@@ -50,7 +63,6 @@ MaintenanceRecord:
   - technician: "Bob Miller"
   - parts_used: ["Oil Filter", "Belt Drive"]
 
-
 4. Production Lines → Production Metrics (One-to-Many)
 ProductionMetrics:
   - line_id: "LINE_01"           # Foreign key to production line
@@ -59,19 +71,54 @@ ProductionMetrics:
   - efficiency: 87.5%
   - oee: 82.3%
 
+5. AI-Powered Solution Optimization System
+SolutionOptimizer:
+  - Extracts solution_comment from alerts
+  - Uses vector similarity search with error_code filtering
+  - Applies intelligent decision-making:
+    * Score > 0.95 → Duplicate detected, ignores
+    * Score 0.8-0.95 → Uses LLM to determine merge/subset
+    * Score < 0.8 → Inserts as new solution if not subset
+  - Creates optimized, non-redundant knowledge base
 
-5. Operators → Queries → AI Responses (Chain Relationship)
+Solution:
+  - solution_id: "uuid-def"
+  - error_code: "E001"           # Groups solutions by error type
+  - solution_comment: "Optimized maintenance solution text"
+  - created_date: "2024-01-15T10:30:00"
+  - embedding: [0.1, 0.2, ...]  # Vector embeddings for semantic search
 
-
+6. Enhanced Agent Routing System
 OperatorQuery:
   - query_id: "uuid-789"
   - operator_id: "john_smith"
-  - production_line_id: "LINE_01"  # Context reference
-  - machine_id: "MCH_001"          # Optional specific machine
   - query_text: "High temp warning on Ultima SV"
+  - query_type: "troubleshooting"  # Routes to specialized agent
+
+AgentRouter:
+  - Routes queries to specialized toolsets:
+    * troubleshooting → Troubleshooting agent
+    * maintenance → Maintenance planning agent
+    * monitoring → Production monitoring agent
+    * performance → Performance analysis agent
+    * general → Full manufacturing suite agent
 
 AIResponse:
   - response_id: "uuid-abc"
   - query_id: "uuid-789"           # Foreign key to query
   - manual_references: ["manual_chunk_0042"]  # References to manual
+  - solution_references: ["solution_uuid-def"] # References to optimized solutions
   - sources: ["alert_uuid-123"]    # References to related alerts
+  - agent_type: "troubleshooting"  # Which specialized agent provided response
+
+7. Vector Search Integration
+ManualChunk:
+  - chunk_id: "manual_chunk_0042"
+  - content: "Cooling system maintenance procedures..."
+  - embedding: [0.3, 0.4, ...]   # Vector embeddings for semantic search
+  - machine_type: "Ultima_SV"
+
+VectorSearchIndexes:
+  - manuals_vector_index: Semantic search on manual content
+  - solutions_vector_index: Semantic search on solution comments
+  - Both support filtered queries (by machine_type, error_code, etc.)

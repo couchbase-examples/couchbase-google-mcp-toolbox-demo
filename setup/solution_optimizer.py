@@ -1,12 +1,14 @@
-"""Incrementally deduplicate solutions using vector similarity search.
+"""AI-powered solution optimizer using vector similarity search and LLM evaluation.
 
 For every alert document this script embeds its `solution_comment`, then
 performs a vector similarity search **filtered by error_code** against the
-`solutions` collection.  The decision table:
+`solutions` collection. The intelligent decision process:
 
-    score > 0.95  → duplicate, ignore
-    0.8–0.95    → ask LLM whether new sentence is subset; extend if needed
-    < 0.8       → insert as new solution if new sentence is not subset of existing solutions
+    score > 0.95  → duplicate detected, ignore
+    0.8–0.95      → use LLM to determine if solutions should be merged or one is a subset
+    < 0.8         → insert as new solution if not a subset of existing solutions
+
+This creates an optimized, non-redundant knowledge base of manufacturing solutions.
 """
 
 import json
@@ -83,8 +85,8 @@ Answer "subset" if either solution is entirely contained in the other, otherwise
 )
 
 
-class Deduplicator:
-    """Handles incremental deduplication of solution sentences."""
+class SolutionOptimizer:
+    """Handles AI-powered optimization of manufacturing alert solutions using vector similarity and LLM evaluation."""
     
     def __init__(self):
         self.cb = CouchbaseClient()
@@ -93,8 +95,8 @@ class Deduplicator:
         self.mutation_state: Optional[MutationState] = None
 
     def run(self) -> None:
-        """Run the deduplication process."""
-        logger.info("Beginning incremental solution deduplication...")
+        """Run the solution optimization process."""
+        logger.info("Beginning AI-powered solution optimization...")
 
         alerts = self._fetch_alert_sentences()
         if not alerts:
@@ -106,7 +108,7 @@ class Deduplicator:
         for alert in alerts:
             self._process_sentence(alert["error_code"], alert["solution_comment"].strip())
 
-        logger.info("✅ Deduplication run complete")
+        logger.info("✅ Solution optimization complete")
 
     def _fetch_alert_sentences(self) -> List[dict]:
         """Fetch alert sentences from the database."""
@@ -127,7 +129,7 @@ class Deduplicator:
             return []
 
     def _process_sentence(self, error_code: str, sentence: str) -> None:
-        """Process a single sentence for deduplication."""
+        """Process a single sentence for optimization."""
         logger.info("=======================")
         if not sentence:
             return
@@ -300,4 +302,4 @@ class Deduplicator:
 
 
 if __name__ == "__main__":
-    Deduplicator().run()
+    SolutionOptimizer().run() 

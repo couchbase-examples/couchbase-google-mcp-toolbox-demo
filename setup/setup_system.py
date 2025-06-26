@@ -11,7 +11,7 @@ from pathlib import Path
 from setup.couchbase_client import CouchbaseClient
 from setup.document_processor import DocumentProcessor
 from setup.sample_data_generator import SampleDataGenerator
-from setup.deduplicate_solutions import Deduplicator
+from setup.solution_optimizer import SolutionOptimizer
 
 # Set up logging
 logging.basicConfig(
@@ -122,14 +122,14 @@ class SystemSetup:
                 logger.info("🎉 Full system setup completed successfully!")
                 logger.info(f"Generated data summary: {sample_data_summary}")
 
-                logger.info("Deduplicating solutions...")
-                deduplicator = Deduplicator()
-                deduplicator.run()
-                logger.info("✅ Solutions deduplicated successfully!")
+                logger.info("Optimizing solutions...")
+                optimizer = SolutionOptimizer()
+                optimizer.run()
+                logger.info("✅ Solutions optimized successfully!")
                 return True
             else:
                 logger.error("❌ Sample data generation failed")
-                logger.info("Skipping solutions deduplication")
+                logger.info("Skipping solutions optimization")
                 return False
                 
         except Exception as e:

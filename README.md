@@ -7,11 +7,11 @@ A comprehensive demonstration of a Consumer Packaged Goods (CPG) manufacturing s
 This demo combines the **GenAI Toolbox MCP (Multi-Collection Provider) server** with **Couchbase Vector Search** and **LangGraph** to deliver:
 
 • **🧰 Natural-Language Tool Access** – The MCP server turns every SQL query in `tools.yaml` into a REST/LLM-friendly tool that agents can invoke with plain English.
-• **🎯 Specialized Multi-Tool Agents** – Five LangGraph ReAct agents (troubleshooting, maintenance, monitoring, performance, general) auto-select the right toolset; troubleshooting and general agents additionally tap the manual semantic-search tool.
-• **🔍 Semantic Manual Search** – Vector embeddings let operators retrieve the most relevant PDF manual snippets for a given issue (exposed only to the agents that need it).
+• **🎯 Specialized Multi-Tool Agents** – Four specialized LangGraph ReAct agents (troubleshooting, maintenance, monitoring, performance) plus a general agent that auto-select the right toolset; troubleshooting and general agents additionally tap the manual semantic-search tool.
+• **🔍 Semantic Manual Search** – Vector embeddings let operators retrieve the most relevant manual snippets for a given issue (exposed only to the agents that need it).
 • **💾 Resilient State & Replay** – `langgraph-checkpointer-couchbase` persists every agent step in Couchbase so conversations can resume or be audited later.
 • **⚡ High Throughput** – Connection pooling, async I/O and caching across database, embeddings and tool calls keep latency low even under load.
-• **🔒 Enterprise-Grade Security** – Centralised MCP server + scoped credentials; no direct DB creds in the web tier.
+• **🔒 Enterprise-Grade Security** – Centralized MCP server + scoped credentials; no direct DB creds in the web tier.
 
 ## 🏗️ Architecture Overview
 
@@ -88,11 +88,11 @@ pip install -r requirements.txt
 
 Key dependencies include:
 
-- `couchbase==4.3.6` for database connectivity
+- `couchbase==4.4.0` for database connectivity
 - `langgraph==0.4.7` for agent orchestration
 - `langchain-google-genai>=2.1.5` for Google AI integration
 - `toolbox-langchain==0.2.0` for GenAI Toolbox integration
-- `sentence-transformers==2.2.2` for embedding generation
+- `langgraph-checkpointer-couchbase>=1.0.6` for state persistence
 
 ### 2. Configure Environment
 
@@ -125,7 +125,7 @@ genai-toolbox --tools-file tools.yaml --port 5000
 
 The server will read `tools.yaml`, automatically register the data sources and REST endpoints, and start listening on `http://localhost:5000`.
 
-Tip: add the binary to your `$PATH` so you can just type `genai-toolbox` from any folder.
+**Note:** Add the binary to your `$PATH` so you can run `genai-toolbox` from any folder.
 
 ### 4. Initialize the System
 
@@ -138,8 +138,9 @@ This will:
 
 - Set up Couchbase database collections and indexes
 - Generate realistic manufacturing sample data
-- Process the machine manual PDF (if present)
+- Process the machine manual (if `manual.txt` or `manual.pdf` is present)
 - Initialize vector embeddings for manual search
+- Optimize alert solutions using AI-powered similarity detection and intelligent merging
 
 ### 5. Start the Backend API
 
@@ -317,11 +318,26 @@ Different system prompts for specialized agents:
 
 ## 🧪 Running the Demo
 
+### Complete Setup Process
+
 ```bash
+# 1. Install dependencies
 pip install -r requirements.txt
-python -m setup.setup_system  # Initialize database and generate sample data
-uvicorn api:app --reload          # Start backend API (port 8000)
-streamlit run streamlit_app.py  # Start web interface (port 8501)
+
+# 2. Start GenAI Toolbox MCP Server (in separate terminal)
+genai-toolbox --tools-file tools.yaml --port 5000
+
+# 3. Initialize database and generate sample data
+python -m setup.setup_system
+
+# 4. Start backend API (in separate terminal)
+uvicorn api:app --reload --host 0.0.0.0 --port 8000
+
+# 5. Start web interface (in separate terminal)
+streamlit run streamlit_app.py
+```
+
+### Alternative: API Only
 
 ```
 
@@ -349,14 +365,6 @@ system_metrics = {
     "system_uptime": "99.5%"
 }
 ```
-
-**Agent Initialization Errors**
-
-   ```bash
-   # Debug agent creation
-   export LOG_LEVEL=DEBUG
-   python api.py
-   ```
 
 ## 📄 License
 
