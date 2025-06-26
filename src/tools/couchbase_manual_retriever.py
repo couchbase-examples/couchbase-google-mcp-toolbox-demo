@@ -10,7 +10,6 @@ from typing import Optional
 
 from langchain_couchbase import CouchbaseSearchVectorStore
 from langchain.tools.retriever import create_retriever_tool
-from langchain_openai import OpenAIEmbeddings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain.tools import Tool
 from couchbase.cluster import Cluster
