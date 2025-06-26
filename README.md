@@ -22,8 +22,8 @@ graph TD
         API["FastAPI Backend (api.py)"]
     end
 
-    subgraph
-        ManufacturingAgent["**Agent Orchestrator**<br/>Routes user queries to a specialized agent<br/>(e.g., Troubleshooting, Maintenance) for resolution."]
+    subgraph "Agent Orchestration (LangGraph)"
+        ManufacturingAgent["A top-level graph routes the query to the<br/>appropriate specialized agent for resolution."]
     end
 
     subgraph "Tool Layer"
