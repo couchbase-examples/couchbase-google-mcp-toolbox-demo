@@ -246,7 +246,7 @@ class CouchbaseClient:
             # Create all primary indexes
             for index in primary_indexes:
                 try:
-                    self.cluster.query(index)
+                    self.cluster.query(index).execute()
                     logger.info(f"Created primary index: {index}")
                 except CouchbaseException as e:
                     if "already exists" not in str(e):
