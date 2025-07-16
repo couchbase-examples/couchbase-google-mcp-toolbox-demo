@@ -70,7 +70,7 @@ graph TD
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/your-username/genai-rag.git
 cd genai-rag
 
 # Install Python dependencies
@@ -104,21 +104,7 @@ APP_NAME=CPG Manufacturing AI Assistant
 DEBUG=true
 ```
 
-### 3. Start the MCP Toolbox for Databases MCP Server
-
-The MCP Toolbox for Databases **MCP (Multi-Collection Provider) server** exposes all database tools defined in `tools.yaml`.  
-Make sure you have `tools.yaml` configured with the correct Couchbase connection string, username and password first.
-
-```bash
-# Download the binary (first time only) and start the server on port 5000
-genai-toolbox --tools-file tools.yaml --port 5000
-```
-
-The server will read `tools.yaml`, automatically register the data sources and REST endpoints, and start listening on `http://localhost:5000`.
-
-**Note:** Add the binary to your `$PATH` so you can run `genai-toolbox` from any folder.
-
-### 4. Initialize the System
+### 3. Initialize the System
 
 ```bash
 # Run the system setup
@@ -132,6 +118,32 @@ This will:
 - Process the machine manual (if `manual.txt` or `manual.pdf` is present)
 - Initialize vector embeddings for manual search
 - Optimize alert solutions using AI-powered similarity detection and intelligent merging
+
+### 4. Start the MCP Toolbox for Databases MCP Server
+
+The MCP Toolbox for Databases **MCP (Multi-Collection Provider) server** exposes all database tools defined in `tools.yaml`.  
+Make sure you have `tools.yaml` configured with the correct Couchbase connection string, username and password first.
+
+#### Install the MCP Toolbox Binary
+
+First, download and install the `genai-toolbox` binary:
+
+```bash
+ Download binary directly from GitHub releases
+# Visit: https://github.com/googleapis/genai-toolbox/releases
+# Download the appropriate binary for your OS and add to PATH
+```
+
+#### Start the Server
+
+```bash
+# Start the server on port 5000
+genai-toolbox --tools-file tools.yaml --port 5000
+```
+
+The server will read `tools.yaml`, automatically register the data sources and REST endpoints, and start listening on `http://localhost:5000`.
+
+**Note:** Make sure the binary is in your `$PATH` so you can run `genai-toolbox` from any folder.
 
 ### 5. Start the Backend API
 
