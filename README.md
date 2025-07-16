@@ -329,11 +329,11 @@ Different system prompts for specialized agents:
 # 1. Install dependencies
 pip install -r requirements.txt
 
-# 2. Start MCP Toolbox for Databases MCP Server (in separate terminal)
-genai-toolbox --tools-file tools.yaml --port 5000
-
-# 3. Initialize database and generate sample data
+# 2. Initialize database and generate sample data
 python -m setup.setup_system
+
+# 3. Start MCP Toolbox for Databases MCP Server (in separate terminal)
+genai-toolbox --tools-file tools.yaml --port 5000
 
 # 4. Start backend API (in separate terminal)
 uvicorn api:app --reload --host 0.0.0.0 --port 8000
