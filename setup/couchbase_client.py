@@ -73,6 +73,7 @@ class CouchbaseClient:
         """Create scope and all required collections if they don't exist."""
         try:
             self._ensure_scope_and_collections_exist()
+            self._ensure_langgraph_scope_and_collections_exist()
             
             # Re-initialize collections after creation
             for collection_type, collection_name in settings.couchbase_collections.items():
@@ -150,6 +151,72 @@ class CouchbaseClient:
             logger.error(f"❌ Error in scope/collection management: {e}")
             logger.warning("⚠️ Falling back to default scope and collection")
 
+    def _ensure_langgraph_scope_and_collections_exist(self):
+        """Create LangGraph scope and collections for checkpointing if they don't exist."""
+        try:
+            bucket_manager = self.bucket.collections()
+            
+            # Check and create LangGraph scope if it doesn't exist
+            try:
+                existing_scopes = bucket_manager.get_all_scopes()
+                langgraph_scope_exists = any(scope.name == settings.langgraph_scope_name for scope in existing_scopes)
+                
+                if not langgraph_scope_exists:
+                    logger.info(f"Creating LangGraph scope: {settings.langgraph_scope_name}")
+                    bucket_manager.create_scope(settings.langgraph_scope_name)
+                    logger.info(f"✅ LangGraph scope '{settings.langgraph_scope_name}' created successfully")
+                else:
+                    logger.info(f"✅ LangGraph scope '{settings.langgraph_scope_name}' already exists")
+                    
+            except Exception as e:
+                logger.error(f"❌ Error checking/creating LangGraph scope: {e}")
+                return  # Skip collection creation if scope creation fails
+            
+            # Create LangGraph collections
+            try:
+                langgraph_collections = {
+                    "checkpoints": settings.langgraph_checkpoints_collection_name,
+                    "checkpoint_writes": settings.langgraph_checkpoint_writes_collection_name
+                }
+                
+                existing_scopes = bucket_manager.get_all_scopes()
+                langgraph_scope = next((scope for scope in existing_scopes if scope.name == settings.langgraph_scope_name), None)
+                
+                if langgraph_scope:
+                    existing_collection_names = {coll.name for coll in langgraph_scope.collections}
+                    
+                    # Drop existing LangGraph collections first
+                    for collection_type, collection_name in langgraph_collections.items():
+                        if collection_name in existing_collection_names:
+                            logger.info(f"🗑️ Dropping existing LangGraph collection: {collection_name} (for {collection_type}) in scope: {settings.langgraph_scope_name}")
+                            try:
+                                bucket_manager.drop_collection(
+                                    collection_name=collection_name,
+                                    scope_name=settings.langgraph_scope_name
+                                )
+                                logger.info(f"✅ LangGraph collection '{collection_name}' dropped successfully")
+                            except Exception as e:
+                                logger.error(f"❌ Failed to drop LangGraph collection '{collection_name}': {e}")
+                    
+                    # Now create all LangGraph collections fresh
+                    for collection_type, collection_name in langgraph_collections.items():
+                        logger.info(f"Creating LangGraph collection: {collection_name} (for {collection_type}) in scope: {settings.langgraph_scope_name}")
+                        try:
+                            bucket_manager.create_collection( 
+                                collection_name=collection_name,
+                                scope_name=settings.langgraph_scope_name
+                            )
+                            logger.info(f"✅ LangGraph collection '{collection_name}' created successfully")
+                        except Exception as e:
+                            logger.error(f"❌ Failed to create LangGraph collection '{collection_name}': {e}")
+                        
+            except Exception as e:
+                logger.error(f"❌ Error checking/creating LangGraph collections: {e}")
+                    
+        except Exception as e:
+            logger.error(f"❌ Error in LangGraph scope/collection management: {e}")
+            logger.warning("⚠️ LangGraph collections may not be available")
+
     def get_collection(self, collection_type: str):
         """Get a specific collection by type."""
         if collection_type in self.collections:
@@ -159,124 +226,74 @@ class CouchbaseClient:
             return self.bucket.default_collection()
 
     def create_indexes(self):
-        """Create necessary indexes for all collections."""
+        """Create primary indexes for all collections."""
         try:
             bucket_name = settings.couchbase_bucket_name
             scope_name = settings.couchbase_scope_name
             
-            # Create indexes for each collection
-            all_indexes = []
+            # Create primary indexes for each collection
+            primary_indexes = []
             
-            # Indexes for manuals collection
-            manuals_collection = settings.couchbase_collections['manuals']
-            if scope_name == "_default":
-                manuals_path = f"`{bucket_name}`"
-            else:
-                manuals_path = f"`{bucket_name}`.`{scope_name}`.`{manuals_collection}`"
-            
-            all_indexes.extend([
-                f"CREATE INDEX idx_manual_type ON {manuals_path}(type)",
-                f"CREATE INDEX idx_manual_content ON {manuals_path}(content)",
-                f"CREATE INDEX idx_manual_machine_type ON {manuals_path}(machine_type)",
-                f"CREATE INDEX idx_manual_chunk_id ON {manuals_path}(chunk_id)"
-            ])
-            
-            # Indexes for machines collection
-            machines_collection = settings.couchbase_collections['machines']
-            if scope_name == "_default":
-                machines_path = f"`{bucket_name}`"
-            else:
-                machines_path = f"`{bucket_name}`.`{scope_name}`.`{machines_collection}`"
-            
-            all_indexes.extend([
-                f"CREATE INDEX idx_machine_type ON {machines_path}(type)",
-                f"CREATE INDEX idx_machine_id ON {machines_path}(machine_id)",
-                f"CREATE INDEX idx_machine_prod_line_id ON {machines_path}(production_line_id)",
-                f"CREATE INDEX idx_machine_status ON {machines_path}(current_status)"
-            ])
-
-            # Indexes for production_lines collection
-            production_lines_collection = settings.couchbase_collections['production_lines']
-            if scope_name == "_default":
-                production_lines_path = f"`{bucket_name}`"
-            else:
-                production_lines_path = f"`{bucket_name}`.`{scope_name}`.`{production_lines_collection}`"
-            
-            all_indexes.extend([
-                f"CREATE INDEX idx_prod_line_type ON {production_lines_path}(type)",
-                f"CREATE INDEX idx_prod_line_id ON {production_lines_path}(production_line_id)",
-                f"CREATE INDEX idx_prod_line_status ON {production_lines_path}(status)"
-            ])
-            
-            # Indexes for alerts collection
-            alerts_collection = settings.couchbase_collections['alerts']
-            if scope_name == "_default":
-                alerts_path = f"`{bucket_name}`"
-            else:
-                alerts_path = f"`{bucket_name}`.`{scope_name}`.`{alerts_collection}`"
-            
-            all_indexes.extend([
-                f"CREATE INDEX idx_alert_type ON {alerts_path}(type)",
-                f"CREATE INDEX idx_alert_severity ON {alerts_path}(severity)",
-                f"CREATE INDEX idx_alert_status ON {alerts_path}(status)",
-                f"CREATE INDEX idx_alert_machine_id ON {alerts_path}(machine_id)",
-                f"CREATE INDEX idx_alert_timestamp ON {alerts_path}(timestamp)"
-            ])
-            
-            # Indexes for maintenance collection
-            maintenance_collection = settings.couchbase_collections['maintenance']
-            if scope_name == "_default":
-                maintenance_path = f"`{bucket_name}`"
-            else:
-                maintenance_path = f"`{bucket_name}`.`{scope_name}`.`{maintenance_collection}`"
-            
-            all_indexes.extend([
-                f"CREATE INDEX idx_maintenance_type ON {maintenance_path}(type)",
-                f"CREATE INDEX idx_maintenance_machine_id ON {maintenance_path}(machine_id)",
-                f"CREATE INDEX idx_maintenance_status ON {maintenance_path}(status)",
-                f"CREATE INDEX idx_maintenance_date ON {maintenance_path}(scheduled_date)"
-            ])
-            
-            # Indexes for metrics collection
-            metrics_collection = settings.couchbase_collections['metrics']
-            if scope_name == "_default":
-                metrics_path = f"`{bucket_name}`"
-            else:
-                metrics_path = f"`{bucket_name}`.`{scope_name}`.`{metrics_collection}`"
-            
-            all_indexes.extend([
-                f"CREATE INDEX idx_metrics_type ON {metrics_path}(type)",
-                f"CREATE INDEX idx_metrics_line_id ON {metrics_path}(line_id)",
-                f"CREATE INDEX idx_metrics_timestamp ON {metrics_path}(timestamp)"
-            ])
-            
-            # Indexes for solutions collection (error_code to solutions mapping)
-            solutions_collection = settings.couchbase_collections.get('solutions')
-            if solutions_collection:
+            # Primary index for each manufacturing collection
+            for collection_type, collection_name in settings.couchbase_collections.items():
                 if scope_name == "_default":
-                    solutions_path = f"`{bucket_name}`"
+                    collection_path = f"`{bucket_name}`"
                 else:
-                    solutions_path = f"`{bucket_name}`.`{scope_name}`.`{solutions_collection}`"
-
-                all_indexes.extend([
-                    f"CREATE INDEX idx_solutions_type ON {solutions_path}(type)",
-                    f"CREATE INDEX idx_solutions_error_code ON {solutions_path}(error_code)"
-                ])
+                    collection_path = f"`{bucket_name}`.`{scope_name}`.`{collection_name}`"
+                
+                primary_indexes.append(f"CREATE PRIMARY INDEX ON {collection_path}")
             
-            # Create all indexes
-            for index in all_indexes:
+            # Create all primary indexes
+            for index in primary_indexes:
                 try:
                     self.cluster.query(index)
-                    logger.info(f"Created index: {index}")
+                    logger.info(f"Created primary index: {index}")
                 except CouchbaseException as e:
                     if "already exists" not in str(e):
-                        logger.warning(f"Failed to create index: {e}")
+                        logger.warning(f"Failed to create primary index: {e}")
+            
+            # Create LangGraph indexes
+            self.create_langgraph_indexes()
             
             # Create vector search indexes
             self.create_vector_indexes()
                         
         except Exception as e:
             logger.error(f"Error creating indexes: {e}")
+
+    def create_langgraph_indexes(self):
+        """Create primary indexes for LangGraph checkpointing collections."""
+        try:
+            bucket_name = settings.couchbase_bucket_name
+            langgraph_scope_name = settings.langgraph_scope_name
+            
+            # Create primary indexes for LangGraph collections
+            langgraph_collections = [
+                settings.langgraph_checkpoints_collection_name,
+                settings.langgraph_checkpoint_writes_collection_name
+            ]
+            
+            langgraph_primary_indexes = []
+            
+            for collection_name in langgraph_collections:
+                if langgraph_scope_name == "_default":
+                    collection_path = f"`{bucket_name}`"
+                else:
+                    collection_path = f"`{bucket_name}`.`{langgraph_scope_name}`.`{collection_name}`"
+                
+                langgraph_primary_indexes.append(f"CREATE PRIMARY INDEX ON {collection_path}")
+            
+            # Create all LangGraph primary indexes
+            for index in langgraph_primary_indexes:
+                try:
+                    self.cluster.query(index)
+                    logger.info(f"Created LangGraph primary index: {index}")
+                except CouchbaseException as e:
+                    if "already exists" not in str(e):
+                        logger.warning(f"Failed to create LangGraph primary index: {e}")
+                        
+        except Exception as e:
+            logger.error(f"Error creating LangGraph indexes: {e}")
 
     def create_vector_indexes(self):
         """Create vector search indexes for RAG functionality."""
