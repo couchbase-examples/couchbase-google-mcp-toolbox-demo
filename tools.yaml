@@ -237,7 +237,7 @@ tools:
   get-solutions-by-error-code:
     kind: couchbase-sql
     source: couchbase-manufacturing
-    description: 'Get past troubleshooted solutions for a specific error code with pagination support, including solutions not covered by the manual, aggregated from real-world troubleshooting history. Use get-solutions-count-by-error-code to support load more solutions.'
+    description: 'Get past troubleshooted solutions for a specific error code with pagination support, including solutions not covered by the manual, aggregated from real-world troubleshooting history. Use get-solutions-count-by-error-code to suggest agent to load more solutions.'
     parameters:
       - name: error_code
         type: string
