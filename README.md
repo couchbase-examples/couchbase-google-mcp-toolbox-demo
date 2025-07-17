@@ -7,7 +7,7 @@ A comprehensive demonstration of a Consumer Packaged Goods (CPG) manufacturing s
 This demo combines the **MCP Toolbox for Databases MCP (Multi-Collection Provider) server** with **Couchbase Vector Search** and **LangGraph** to deliver:
 
 - **🧰 Natural-Language Tool Access** – The MCP server turns every SQL query in `tools.yaml` into a REST/LLM-friendly tool that agents can invoke with plain English.
-- **🎯 Specialized Multi-Tool Agents** – Four specialized LangGraph ReAct agents (troubleshooting, maintenance, monitoring, performance) plus a general agent that auto-select the right toolset; troubleshooting and general agents additionally tap the manual semantic-search tool.
+- **🎯 Specialized Multi-Tool Agents** – Five specialized LangGraph ReAct agents (troubleshooting, maintenance, monitoring, performance, general) with router-based selection; troubleshooting and general agents additionally tap the manual semantic-search tool.
 - **🔍 Semantic Manual Search** – Vector embeddings let operators retrieve the most relevant manual snippets for a given issue (exposed only to the agents that need it).
 - **💾 Resilient State & Replay** – `langgraph-checkpointer-couchbase` persists every agent step in Couchbase so conversations can resume or be audited later.
 - **⚡ High Throughput** – Connection pooling, async I/O and caching across database, embeddings and tool calls keep latency low even under load.
@@ -201,7 +201,9 @@ LangGraph-based agent with specialized toolsets:
 ```python
 from src.agents.enhanced_manufacturing_agent import create_manufacturing_agent
 
-# Agent automatically selects appropriate toolset based on query type
+# Creates a StateGraph workflow with router node and specialized agent nodes
+# Router analyzes query_type and routes to appropriate ReAct agent
+# Each agent has specialized tools and system prompts for their domain
 agent = create_manufacturing_agent(
     cluster=cluster,
     checkpointer=checkpointer,

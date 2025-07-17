@@ -119,7 +119,7 @@ class SolutionOptimizer:
         query = (
             f"SELECT META().id AS doc_id, error_code, solution_comment "
             f"FROM `{bucket}`.`{scope}`.`{alerts_coll}` "
-            "WHERE type = 'alert' AND error_code IS NOT NULL AND solution_comment IS NOT NULL"
+            "WHERE error_code IS NOT NULL AND solution_comment IS NOT NULL"
         )
 
         try:
@@ -231,7 +231,6 @@ class SolutionOptimizer:
         try:
             emb = self.embedder.embed_query(sentence)
             doc = {
-                "type": "solution",
                 "error_code": error_code,
                 "solution_comment": sentence,
                 "embedding": emb,

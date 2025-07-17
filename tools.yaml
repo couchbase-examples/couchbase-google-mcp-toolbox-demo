@@ -23,7 +23,7 @@ tools:
     statement: |
       SELECT production_line_id, name, status, efficiency, target_output, actual_output, current_product
       FROM `cpg_manufacturing`.`manufacturing`.`production_lines` 
-      WHERE type = 'production_line' AND production_line_id = $line_id
+      WHERE production_line_id = $line_id
 
   get-all-production-lines:
     kind: couchbase-sql
@@ -33,7 +33,6 @@ tools:
     statement: |
       SELECT production_line_id, name, status, efficiency, target_output, actual_output
       FROM `cpg_manufacturing`.`manufacturing`.`production_lines` 
-      WHERE type = 'production_line'
       ORDER BY production_line_id
 
   # Machine Management Tools
@@ -49,7 +48,7 @@ tools:
       SELECT machine_id, name, machine_type, production_line_id, current_status, 
              operating_parameters, specifications, last_maintenance, next_maintenance
       FROM `cpg_manufacturing`.`manufacturing`.`machines` 
-      WHERE type = 'machine' AND machine_id = $machine_id
+      WHERE machine_id = $machine_id
 
   get-machines-by-line:
     kind: couchbase-sql
@@ -62,7 +61,7 @@ tools:
     statement: |
       SELECT machine_id, name, machine_type, current_status, operating_parameters
       FROM `cpg_manufacturing`.`manufacturing`.`machines` 
-      WHERE type = 'machine' AND production_line_id = $line_id
+      WHERE production_line_id = $line_id
       ORDER BY machine_id
 
   # Alert Management Tools
@@ -79,7 +78,7 @@ tools:
       SELECT alert_id, machine_id, production_line_id, severity,
              error_code, timestamp, parameters
       FROM `cpg_manufacturing`.`manufacturing`.`alerts` 
-      WHERE type = 'alert' AND status = 'active'
+      WHERE status = 'active'
       AND ($line_id IS NULL OR production_line_id = $line_id)
       ORDER BY severity DESC, timestamp DESC
       LIMIT 20
@@ -93,7 +92,7 @@ tools:
       SELECT alert_id, machine_id, production_line_id, 
              error_code, timestamp, parameters
       FROM `cpg_manufacturing`.`manufacturing`.`alerts` 
-      WHERE type = 'alert' AND status = 'active' AND severity = 'critical'
+      WHERE status = 'active' AND severity = 'critical'
       ORDER BY timestamp DESC
 
   get-machine-alerts:
@@ -111,7 +110,7 @@ tools:
     statement: |
       SELECT alert_id, severity, error_code, timestamp, status
       FROM `cpg_manufacturing`.`manufacturing`.`alerts` 
-      WHERE type = 'alert' AND machine_id = $machine_id
+      WHERE machine_id = $machine_id
       AND DATE_DIFF_STR(CLOCK_STR(), timestamp, 'hour') <= COALESCE($hours_back, 24)
       ORDER BY timestamp DESC
       LIMIT 10
@@ -133,7 +132,7 @@ tools:
       SELECT maintenance_id, maintenance_type, status, scheduled_date, 
              started_date, completed_date, technician, description, parts_used, cost
       FROM `cpg_manufacturing`.`manufacturing`.`maintenance` 
-      WHERE type = 'maintenance_record' AND machine_id = $machine_id
+      WHERE machine_id = $machine_id
       ORDER BY scheduled_date DESC
       LIMIT COALESCE($limit_records, 10)
 
@@ -150,8 +149,7 @@ tools:
       SELECT maintenance_id, machine_id, maintenance_type, scheduled_date, 
              technician, description
       FROM `cpg_manufacturing`.`manufacturing`.`maintenance` 
-      WHERE type = 'maintenance_record' 
-      AND status IN ('scheduled', 'in_progress')
+      WHERE status IN ('scheduled', 'in_progress')
       AND scheduled_date <= DATE_ADD(NOW(), INTERVAL COALESCE($days_ahead, 30) DAY)
       ORDER BY scheduled_date ASC
 
@@ -164,7 +162,7 @@ tools:
       SELECT maintenance_id, machine_id, maintenance_type, scheduled_date, 
              technician, description
       FROM `cpg_manufacturing`.`manufacturing`.`maintenance` 
-      WHERE type = 'maintenance_record' AND status = 'overdue'
+      WHERE status = 'overdue'
       ORDER BY scheduled_date ASC
 
   # Production Metrics Tools
@@ -184,7 +182,7 @@ tools:
       SELECT line_id, timestamp, units_produced, target_units, efficiency, 
              quality_rate, downtime_minutes, oee
       FROM `cpg_manufacturing`.`manufacturing`.`metrics` 
-      WHERE type = 'production_metrics' AND line_id = $line_id
+      WHERE line_id = $line_id
       AND timestamp >= DATE_SUB(NOW(), INTERVAL COALESCE($days_back, 7) DAY)
       ORDER BY timestamp DESC
 
@@ -195,11 +193,11 @@ tools:
     parameters: []
     statement: |
       SELECT 
-        (SELECT COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`production_lines` WHERE type = 'production_line') as total_lines,
-        (SELECT COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`machines` WHERE type = 'machine') as total_machines,
-        (SELECT COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`alerts` WHERE type = 'alert' AND status = 'active') as active_alerts,
-        (SELECT COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`alerts` WHERE type = 'alert' AND status = 'active' AND severity = 'critical') as critical_alerts,
-        (SELECT COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`maintenance` WHERE type = 'maintenance_record' AND status = 'overdue') as overdue_maintenance
+        (SELECT COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`production_lines`) as total_lines,
+        (SELECT COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`machines`) as total_machines,
+        (SELECT COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`alerts` WHERE status = 'active') as active_alerts,
+        (SELECT COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`alerts` WHERE status = 'active' AND severity = 'critical') as critical_alerts,
+        (SELECT COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`maintenance` WHERE status = 'overdue') as overdue_maintenance
 
   # Context-Aware Alert Analysis Tools
   get-machine-context-for-alert:
@@ -216,32 +214,47 @@ tools:
              a.alert_id, a.severity, a.error_code, a.description as alert_description,
              mr.maintenance_type, mr.completed_date as last_maintenance
       FROM `cpg_manufacturing`.`manufacturing`.`machines` m
-      LEFT JOIN `cpg_manufacturing`.`manufacturing`.`alerts` a ON m.machine_id = a.machine_id AND a.type = 'alert' AND a.status = 'active'
-      LEFT JOIN `cpg_manufacturing`.`manufacturing`.`maintenance` mr ON m.machine_id = mr.machine_id AND mr.type = 'maintenance_record'
-      WHERE m.type = 'machine' AND m.machine_id = $machine_id
+      LEFT JOIN `cpg_manufacturing`.`manufacturing`.`alerts` a ON m.machine_id = a.machine_id AND a.status = 'active'
+      LEFT JOIN `cpg_manufacturing`.`manufacturing`.`maintenance` mr ON m.machine_id = mr.machine_id
+      WHERE m.machine_id = $machine_id
       ORDER BY a.timestamp DESC, mr.completed_date DESC
       LIMIT 5
 
   # Solution Management Tools
+  get-solutions-count-by-error-code:
+    kind: couchbase-sql
+    source: couchbase-manufacturing
+    description: 'Get the total count of available solutions for a specific error code. Use this first to determine if pagination is needed.'
+    parameters:
+      - name: error_code
+        type: string
+        description: Error code to count solutions for
+    statement: |
+      SELECT COUNT(*) as total_solutions, $error_code as error_code
+      FROM `cpg_manufacturing`.`manufacturing`.`solutions` 
+      WHERE error_code = $error_code
+
   get-solutions-by-error-code:
     kind: couchbase-sql
     source: couchbase-manufacturing
-    description: 'Get past troubleshot solutions for a specific error code, including solutions not covered by the manual, aggregated from real-world troubleshooting history. Returns limited results with total count. AGENT INSTRUCTION: If total_solutions > number of returned solutions, ask the user "Would you like to see more solutions for this error code?"'
+    description: 'Get past troubleshooted solutions for a specific error code with pagination support, including solutions not covered by the manual, aggregated from real-world troubleshooting history. Use get-solutions-count-by-error-code to support load more solutions.'
     parameters:
       - name: error_code
         type: string
         description: Error code to find solutions for
+      - name: offset
+        type: integer
+        description: Number of records to skip for pagination (default 0)
       - name: limit_records
         type: integer
-        description: Maximum number of solutions to return (default 10)
+        description: Maximum number of solutions to return (default 5)
     statement: |
-      SELECT 
-        (SELECT solution_id, error_code, solution_comment, created_at, updated_at 
-         FROM `cpg_manufacturing`.`manufacturing`.`solutions` 
-         WHERE type = 'solution' AND error_code = $error_code 
-         ORDER BY updated_at DESC 
-         LIMIT COALESCE($limit_records, 10)) as solutions,
-        (SELECT Raw COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`solutions` WHERE type = 'solution' AND error_code = $error_code)[0] as total_solutions
+      SELECT solution_id, error_code, solution_comment, created_at, updated_at
+      FROM `cpg_manufacturing`.`manufacturing`.`solutions` 
+      WHERE error_code = $error_code 
+      ORDER BY updated_at DESC 
+      OFFSET COALESCE($offset, 0)
+      LIMIT COALESCE($limit_records, 5)
 
 # Tool Groups for Different Use Cases
 toolsets:
@@ -264,6 +277,7 @@ toolsets:
     - get-machine-alerts
     - get-machine-context-for-alert
     - get-maintenance-history
+    - get-solutions-count-by-error-code
     - get-solutions-by-error-code
 
   maintenance-planning:
@@ -290,4 +304,5 @@ toolsets:
     - get-line-efficiency
     - get-facility-overview
     - get-machine-context-for-alert
+    - get-solutions-count-by-error-code
     - get-solutions-by-error-code

@@ -226,7 +226,7 @@ class CouchbaseClient:
             return self.bucket.default_collection()
 
     def create_indexes(self):
-        """Create primary indexes for all collections."""
+        """Create primary and secondary indexes for all collections."""
         try:
             bucket_name = settings.couchbase_bucket_name
             scope_name = settings.couchbase_scope_name
@@ -252,6 +252,9 @@ class CouchbaseClient:
                     if "already exists" not in str(e):
                         logger.warning(f"Failed to create primary index: {e}")
             
+            # Create secondary indexes for query optimization
+            self.create_secondary_indexes()
+            
             # Create LangGraph indexes
             self.create_langgraph_indexes()
             
@@ -260,6 +263,133 @@ class CouchbaseClient:
                         
         except Exception as e:
             logger.error(f"Error creating indexes: {e}")
+
+    def create_secondary_indexes(self):
+        """Create secondary indexes optimized for manufacturing queries."""
+        try:
+            bucket_name = settings.couchbase_bucket_name
+            scope_name = settings.couchbase_scope_name
+            
+            # Define collection paths
+            collection_paths = {}
+            for collection_type, collection_name in settings.couchbase_collections.items():
+                if scope_name == "_default":
+                    collection_paths[collection_type] = f"`{bucket_name}`"
+                else:
+                    collection_paths[collection_type] = f"`{bucket_name}`.`{scope_name}`.`{collection_name}`"
+            
+            # List of secondary indexes to create
+            secondary_indexes = []
+            
+            # === PRODUCTION LINES INDEXES ===
+            if 'production_lines' in collection_paths:
+                collection_path = collection_paths['production_lines']
+                secondary_indexes.extend([
+                    # Index for production_line_id lookups
+                    f"CREATE INDEX idx_production_lines_id ON {collection_path} (production_line_id)",
+                    # Compound index for sorting by production_line_id
+                    f"CREATE INDEX idx_production_lines_sort ON {collection_path} (production_line_id, status, efficiency)"
+                ])
+            
+            # === MACHINES INDEXES ===
+            if 'machines' in collection_paths:
+                collection_path = collection_paths['machines']
+                secondary_indexes.extend([
+                    # Index for machine_id lookups
+                    f"CREATE INDEX idx_machines_id ON {collection_path} (machine_id)",
+                    # Compound index for production_line_id + sorting
+                    f"CREATE INDEX idx_machines_line_sort ON {collection_path} (production_line_id, machine_id, current_status)",
+                    # Index for machine type queries
+                    f"CREATE INDEX idx_machines_machine_type ON {collection_path} (machine_type)"
+                ])
+            
+            # === ALERTS INDEXES ===
+            if 'alerts' in collection_paths:
+                collection_path = collection_paths['alerts']
+                secondary_indexes.extend([
+                    # Compound index for active alerts with sorting (most common query)
+                    f"CREATE INDEX idx_alerts_active_priority ON {collection_path} (status, severity DESC, timestamp DESC)",
+                    # Compound index for active alerts by production line
+                    f"CREATE INDEX idx_alerts_active_line ON {collection_path} (status, production_line_id, severity DESC, timestamp DESC)",
+                    # Compound index for critical alerts
+                    f"CREATE INDEX idx_alerts_critical ON {collection_path} (status, severity, timestamp DESC)",
+                    # Compound index for machine-specific alerts with time filtering
+                    f"CREATE INDEX idx_alerts_machine_time ON {collection_path} (machine_id, timestamp DESC, status)",
+                    # Index for error code lookups
+                    f"CREATE INDEX idx_alerts_error_code ON {collection_path} (error_code, timestamp DESC)",
+                    # Compound index for alert_id and machine context queries
+                    f"CREATE INDEX idx_alerts_id_machine ON {collection_path} (alert_id, machine_id, status)"
+                ])
+            
+            # === MAINTENANCE INDEXES ===
+            if 'maintenance' in collection_paths:
+                collection_path = collection_paths['maintenance']
+                secondary_indexes.extend([
+                    # Compound index for maintenance history by machine
+                    f"CREATE INDEX idx_maintenance_machine_history ON {collection_path} (machine_id, scheduled_date DESC, status)",
+                    # Compound index for upcoming maintenance
+                    f"CREATE INDEX idx_maintenance_upcoming ON {collection_path} (status, scheduled_date ASC, maintenance_type)",
+                    # Compound index for overdue maintenance
+                    f"CREATE INDEX idx_maintenance_overdue ON {collection_path} (status, scheduled_date ASC)",
+                    # Index for maintenance type analysis
+                    f"CREATE INDEX idx_maintenance_type_date ON {collection_path} (maintenance_type, scheduled_date DESC)",
+                    # Index for completed maintenance with dates
+                    f"CREATE INDEX idx_maintenance_completed ON {collection_path} (machine_id, completed_date DESC, maintenance_type)"
+                ])
+            
+            # === METRICS INDEXES ===
+            if 'metrics' in collection_paths:
+                collection_path = collection_paths['metrics']
+                secondary_indexes.extend([
+                    # Compound index for production metrics by line and time
+                    f"CREATE INDEX idx_metrics_line_time ON {collection_path} (line_id, timestamp DESC)",
+                    # Index for efficiency analysis
+                    f"CREATE INDEX idx_metrics_efficiency ON {collection_path} (line_id, efficiency, timestamp DESC)",
+                    # Index for quality metrics
+                    f"CREATE INDEX idx_metrics_quality ON {collection_path} (line_id, quality_rate, timestamp DESC)",
+                    # Index for OEE analysis
+                    f"CREATE INDEX idx_metrics_oee ON {collection_path} (line_id, oee, timestamp DESC)"
+                ])
+            
+            # === SOLUTIONS INDEXES ===
+            if 'solutions' in collection_paths:
+                collection_path = collection_paths['solutions']
+                secondary_indexes.extend([
+                    # Compound index for solutions by error code with sorting
+                    f"CREATE INDEX idx_solutions_error_code ON {collection_path} (error_code, updated_at DESC)",
+                    # Index for solution creation tracking
+                    f"CREATE INDEX idx_solutions_created ON {collection_path} (created_at DESC, error_code)",
+                    # Index for solution updates
+                    f"CREATE INDEX idx_solutions_updated ON {collection_path} (updated_at DESC, error_code)"
+                ])
+            
+
+            # Execute all secondary index creation
+            logger.info("Creating secondary indexes for query optimization...")
+            created_count = 0
+            failed_count = 0
+            
+            for index_sql in secondary_indexes:
+                try:
+                    self.cluster.query(index_sql).execute()
+                    # Extract index name for logging
+                    index_name = index_sql.split("INDEX ")[1].split(" ON ")[0]
+                    logger.info(f"✅ Created secondary index: {index_name}")
+                    created_count += 1
+                except CouchbaseException as e:
+                    if "already exists" in str(e).lower():
+                        logger.debug(f"Secondary index already exists: {index_sql}")
+                    else:
+                        logger.warning(f"Failed to create secondary index: {e}")
+                        failed_count += 1
+                except Exception as e:
+                    logger.error(f"Unexpected error creating index: {e}")
+                    failed_count += 1
+            
+            logger.info(f"📊 Secondary index creation summary: {created_count} created, {failed_count} failed")
+            
+        except Exception as e:
+            logger.error(f"Error creating secondary indexes: {e}")
 
     def create_langgraph_indexes(self):
         """Create primary indexes for LangGraph checkpointing collections."""

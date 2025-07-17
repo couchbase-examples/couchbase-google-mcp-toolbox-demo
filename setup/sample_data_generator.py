@@ -90,10 +90,9 @@ class SampleDataGenerator:
             logger.error(f"Failed to load alert templates JSON: {exc}")
             return []
     
-    def _store_model_as_document(self, doc_id: str, model_instance: Any, doc_type: str, collection_type: str):
-        """Converts a Pydantic model to a dict, adds a 'type' field, and stores it."""
+    def _store_model_as_document(self, doc_id: str, model_instance: Any, collection_type: str):
+        """Converts a Pydantic model to a dict and stores it."""
         doc = model_instance.dict()
-        doc["type"] = doc_type
         self.couchbase_client.store_document(
             doc_id, doc, collection_type=collection_type
         )
@@ -163,7 +162,6 @@ class SampleDataGenerator:
             self._store_model_as_document(
                 f"production_line_{production_line.production_line_id}",
                 production_line,
-                "production_line",
                 "production_lines"
             )
         
@@ -189,7 +187,6 @@ class SampleDataGenerator:
                 self._store_model_as_document(
                     f"machine_{machine.machine_id}",
                     machine,
-                    "machine",
                     "machines"
                 )
                 
@@ -200,7 +197,6 @@ class SampleDataGenerator:
             self._store_model_as_document(
                 f"production_line_{line.production_line_id}",
                 line,
-                "production_line",
                 "production_lines"
             )
         
@@ -249,7 +245,6 @@ class SampleDataGenerator:
             self._store_model_as_document(
                 f"alert_{alert.alert_id}",
                 alert,
-                "alert",
                 "alerts"
             )
         
@@ -302,7 +297,6 @@ class SampleDataGenerator:
             self._store_model_as_document(
                 f"maintenance_{maintenance_id}",
                 maintenance_record,
-                "maintenance_record",
                 "maintenance"
             )
         
@@ -344,7 +338,6 @@ class SampleDataGenerator:
                     self._store_model_as_document(
                         f"metrics_{line.production_line_id}_{timestamp.strftime('%Y%m%d_%H%M')}",
                         metric,
-                        "production_metrics",
                         "metrics"
                     )
         

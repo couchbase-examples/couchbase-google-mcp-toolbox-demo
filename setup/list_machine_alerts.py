@@ -54,9 +54,7 @@ class MachineAlertsReporter:
                 f"FROM `{bucket}`.`{scope}`.`{machines_collection}` m "
                 f"LEFT JOIN `{bucket}`.`{scope}`.`{alerts_collection}` a "
                 f"ON m.machine_id = a.machine_id "
-                f"AND a.type = 'alert' "
                 f"AND a.timestamp >= '{cutoff_iso}' "
-                f"WHERE m.type = 'machine' "
                 f"GROUP BY m.machine_id, m.name, m.current_status, m.production_line_id, m.machine_type "
                 f"ORDER BY m.machine_id"
             )
@@ -84,14 +82,14 @@ class MachineAlertsReporter:
             basic_stats_query = (
                 f"SELECT COUNT(*) as total_alerts "
                 f"FROM `{bucket}`.`{scope}`.`{alerts_collection}` "
-                f"WHERE type = 'alert' AND timestamp >= '{cutoff_iso}'"
+                f"WHERE timestamp >= '{cutoff_iso}'"
             )
             
             # Query for status counts
             status_stats_query = (
                 f"SELECT status, COUNT(*) as count "
                 f"FROM `{bucket}`.`{scope}`.`{alerts_collection}` "
-                f"WHERE type = 'alert' AND timestamp >= '{cutoff_iso}' "
+                f"WHERE timestamp >= '{cutoff_iso}' "
                 f"GROUP BY status"
             )
             
@@ -99,7 +97,7 @@ class MachineAlertsReporter:
             severity_stats_query = (
                 f"SELECT severity, COUNT(*) as count "
                 f"FROM `{bucket}`.`{scope}`.`{alerts_collection}` "
-                f"WHERE type = 'alert' AND timestamp >= '{cutoff_iso}' "
+                f"WHERE timestamp >= '{cutoff_iso}' "
                 f"GROUP BY severity"
             )
             
