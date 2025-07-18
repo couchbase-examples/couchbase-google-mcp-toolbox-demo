@@ -75,18 +75,9 @@ COUCHBASE_COLLECTION_SOLUTIONS=solutions
 ## Automatic Creation
 
 The system will automatically:
+
 1. Create the scope if it doesn't exist
 2. Create all required collections if they don't exist
 3. Create appropriate indexes for each collection
 4. Create vector search indexes for semantic search (manuals and solutions)
 5. Run AI-powered solution optimization during setup
-
-## Benefits
-
-- **Better Organization**: Each data type has its own collection
-- **Improved Performance**: Targeted indexes per collection type
-- **Intelligent Knowledge Management**: AI-powered solution optimization prevents redundancy
-- **Semantic Search**: Vector embeddings enable natural language solution retrieval
-- **Easier Maintenance**: Clear separation of data types
-- **Scalability**: Collections can be individually managed and scaled
-- **Security**: Fine-grained access control per collection type 
