@@ -21,9 +21,9 @@ tools:
         type: string
         description: Production line ID (e.g., LINE_01)
     statement: |
-      SELECT production_line_id, name, status, efficiency, target_output, actual_output, current_product
+      SELECT META().id AS production_line_id, name, status, efficiency, target_output, actual_output, current_product
       FROM `cpg_manufacturing`.`manufacturing`.`production_lines` 
-      WHERE production_line_id = $line_id
+      WHERE META().id = $line_id
 
   get-all-production-lines:
     kind: couchbase-sql
@@ -31,7 +31,7 @@ tools:
     description: Get overview of all production lines and their current status
     parameters: []
     statement: |
-      SELECT production_line_id, name, status, efficiency, target_output, actual_output
+      SELECT META().id AS production_line_id, name, status, efficiency, target_output, actual_output
       FROM `cpg_manufacturing`.`manufacturing`.`production_lines` 
       ORDER BY production_line_id
 
@@ -45,10 +45,10 @@ tools:
         type: string
         description: Machine ID (e.g., MCH_001)
     statement: |
-      SELECT machine_id, name, machine_type, production_line_id, current_status, 
+      SELECT META().id AS machine_id, name, machine_type, production_line_id, current_status, 
              operating_parameters, specifications, last_maintenance, next_maintenance
       FROM `cpg_manufacturing`.`manufacturing`.`machines` 
-      WHERE machine_id = $machine_id
+      WHERE META().id = $machine_id
 
   get-machines-by-line:
     kind: couchbase-sql
@@ -59,7 +59,7 @@ tools:
         type: string
         description: Production line ID
     statement: |
-      SELECT machine_id, name, machine_type, current_status, operating_parameters
+      SELECT META().id AS machine_id, name, machine_type, current_status, operating_parameters
       FROM `cpg_manufacturing`.`manufacturing`.`machines` 
       WHERE production_line_id = $line_id
       ORDER BY machine_id
@@ -75,7 +75,7 @@ tools:
         description: Production line ID (optional, leave empty for all lines)
         
     statement: |
-      SELECT alert_id, machine_id, production_line_id, severity,
+      SELECT META().id AS alert_id, machine_id, production_line_id, severity,
              error_code, timestamp, parameters
       FROM `cpg_manufacturing`.`manufacturing`.`alerts` 
       WHERE status = 'active'
@@ -89,7 +89,7 @@ tools:
     description: Get all critical severity alerts across the facility
     parameters: []
     statement: |
-      SELECT alert_id, machine_id, production_line_id, 
+      SELECT META().id AS alert_id, machine_id, production_line_id, 
              error_code, timestamp, parameters
       FROM `cpg_manufacturing`.`manufacturing`.`alerts` 
       WHERE status = 'active' AND severity = 'critical'
@@ -108,7 +108,7 @@ tools:
         description: Number of hours to look back (default 24)
         
     statement: |
-      SELECT alert_id, severity, error_code, timestamp, status
+      SELECT META().id AS alert_id, severity, error_code, timestamp, status
       FROM `cpg_manufacturing`.`manufacturing`.`alerts` 
       WHERE machine_id = $machine_id
       AND DATE_DIFF_STR(CLOCK_STR(), timestamp, 'hour') <= COALESCE($hours_back, 24)
@@ -129,7 +129,7 @@ tools:
         description: Maximum number of records to return (default 10)
         
     statement: |
-      SELECT maintenance_id, maintenance_type, status, scheduled_date, 
+      SELECT META().id AS maintenance_id, maintenance_type, status, scheduled_date, 
              started_date, completed_date, technician, description, parts_used, cost
       FROM `cpg_manufacturing`.`manufacturing`.`maintenance` 
       WHERE machine_id = $machine_id
@@ -146,11 +146,11 @@ tools:
         description: Number of days to look ahead (default 30)
         
     statement: |
-      SELECT maintenance_id, machine_id, maintenance_type, scheduled_date, 
-             technician, description
+      SELECT META().id AS maintenance_id, machine_id, maintenance_type, scheduled_date, technician, description
       FROM `cpg_manufacturing`.`manufacturing`.`maintenance` 
-      WHERE status IN ('scheduled', 'in_progress')
-      AND scheduled_date <= DATE_ADD(NOW(), INTERVAL COALESCE($days_ahead, 30) DAY)
+      WHERE status IN ['scheduled', 'in_progress']
+      AND scheduled_date > CLOCK_UTC()
+      AND DATE_DIFF_STR(scheduled_date, CLOCK_UTC(), 'day') <= COALESCE($days_ahead, 30)
       ORDER BY scheduled_date ASC
 
   get-overdue-maintenance:
@@ -159,13 +159,12 @@ tools:
     description: Get overdue maintenance tasks
     parameters: []
     statement: |
-      SELECT maintenance_id, machine_id, maintenance_type, scheduled_date, 
+      SELECT META().id AS maintenance_id, machine_id, maintenance_type, scheduled_date, 
              technician, description
       FROM `cpg_manufacturing`.`manufacturing`.`maintenance` 
       WHERE status = 'overdue'
       ORDER BY scheduled_date ASC
 
-  # Production Metrics Tools
   get-line-efficiency:
     kind: couchbase-sql
     source: couchbase-manufacturing
@@ -177,13 +176,12 @@ tools:
       - name: days_back
         type: integer
         description: Number of days to analyze (default 7)
-        
     statement: |
       SELECT line_id, timestamp, units_produced, target_units, efficiency, 
              quality_rate, downtime_minutes, oee
       FROM `cpg_manufacturing`.`manufacturing`.`metrics` 
       WHERE line_id = $line_id
-      AND timestamp >= DATE_SUB(NOW(), INTERVAL COALESCE($days_back, 7) DAY)
+      AND DATE_DIFF_STR(CLOCK_UTC(), timestamp, 'day') <= COALESCE($days_back, 7)
       ORDER BY timestamp DESC
 
   get-facility-overview:
@@ -198,27 +196,6 @@ tools:
         (SELECT COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`alerts` WHERE status = 'active') as active_alerts,
         (SELECT COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`alerts` WHERE status = 'active' AND severity = 'critical') as critical_alerts,
         (SELECT COUNT(*) FROM `cpg_manufacturing`.`manufacturing`.`maintenance` WHERE status = 'overdue') as overdue_maintenance
-
-  # Context-Aware Alert Analysis Tools
-  get-machine-context-for-alert:
-    kind: couchbase-sql
-    source: couchbase-manufacturing
-    description: Get combined machine details, active alerts, and recent maintenance history for comprehensive troubleshooting analysis (up to 5 records)
-    parameters:
-      - name: machine_id
-        type: string
-        description: Machine ID to get context for
-    statement: |
-      SELECT m.machine_id, m.name, m.machine_type, m.current_status, 
-             m.operating_parameters, m.specifications,
-             a.alert_id, a.severity, a.error_code, a.description as alert_description,
-             mr.maintenance_type, mr.completed_date as last_maintenance
-      FROM `cpg_manufacturing`.`manufacturing`.`machines` m
-      LEFT JOIN `cpg_manufacturing`.`manufacturing`.`alerts` a ON m.machine_id = a.machine_id AND a.status = 'active'
-      LEFT JOIN `cpg_manufacturing`.`manufacturing`.`maintenance` mr ON m.machine_id = mr.machine_id
-      WHERE m.machine_id = $machine_id
-      ORDER BY a.timestamp DESC, mr.completed_date DESC
-      LIMIT 5
 
   # Solution Management Tools
   get-solutions-count-by-error-code:
@@ -249,7 +226,7 @@ tools:
         type: integer
         description: Maximum number of solutions to return (default 5)
     statement: |
-      SELECT solution_id, error_code, solution_comment, created_at, updated_at
+      SELECT META().id AS solution_id, error_code, solution_comment, created_at, updated_at
       FROM `cpg_manufacturing`.`manufacturing`.`solutions` 
       WHERE error_code = $error_code 
       ORDER BY updated_at DESC 

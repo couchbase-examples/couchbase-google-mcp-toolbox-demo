@@ -35,7 +35,7 @@ class MachineType(str, Enum):
 
 class Alert(BaseModel):
     """Manufacturing alert model."""
-    alert_id: str = Field(..., description="Unique alert identifier")
+    id: str = Field(..., description="Unique alert identifier")
     machine_id: str = Field(..., description="Machine that generated the alert")
     production_line_id: str = Field(..., description="Production line identifier")
     severity: AlertSeverity = Field(..., description="Alert severity level")
@@ -50,7 +50,7 @@ class Alert(BaseModel):
 
 class Machine(BaseModel):
     """Manufacturing machine model."""
-    machine_id: str = Field(..., description="Unique machine identifier")
+    id: str = Field(..., description="Unique machine identifier")
     machine_type: MachineType = Field(..., description="Type of machine")
     production_line_id: str = Field(..., description="Production line where machine is located")
     name: str = Field(..., description="Human-readable machine name")
@@ -65,7 +65,7 @@ class Machine(BaseModel):
 
 class ProductionLine(BaseModel):
     """Production line model."""
-    production_line_id: str = Field(..., description="Unique production line identifier")
+    id: str = Field(..., description="Unique production line identifier")
     name: str = Field(..., description="Production line name")
     status: ProductionLineStatus = Field(..., description="Current line status")
     machines: List[str] = Field(default_factory=list, description="List of machine IDs on this line")
@@ -78,7 +78,7 @@ class ProductionLine(BaseModel):
 
 class MaintenanceRecord(BaseModel):
     """Maintenance record model."""
-    maintenance_id: str = Field(..., description="Unique maintenance record identifier")
+    id: str = Field(..., description="Unique maintenance record identifier")
     machine_id: str = Field(..., description="Machine being maintained")
     maintenance_type: str = Field(..., description="Type of maintenance (preventive, corrective, etc.)")
     status: MaintenanceStatus = Field(..., description="Maintenance status")
@@ -122,7 +122,7 @@ class ProductionMetrics(BaseModel):
 
 class ShiftReport(BaseModel):
     """Shift report model."""
-    shift_id: str = Field(..., description="Unique shift identifier")
+    id: str = Field(..., description="Unique shift identifier")
     production_line_id: str = Field(..., description="Production line identifier")
     shift_start: datetime = Field(..., description="Shift start time")
     shift_end: datetime = Field(..., description="Shift end time")

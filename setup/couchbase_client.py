@@ -285,20 +285,20 @@ class CouchbaseClient:
             if 'production_lines' in collection_paths:
                 collection_path = collection_paths['production_lines']
                 secondary_indexes.extend([
-                    # Index for production_line_id lookups
-                    f"CREATE INDEX idx_production_lines_id ON {collection_path} (production_line_id)",
-                    # Compound index for sorting by production_line_id
-                    f"CREATE INDEX idx_production_lines_sort ON {collection_path} (production_line_id, status, efficiency)"
+                    # Index for document key lookups using meta().id
+                    f"CREATE INDEX idx_production_lines_id ON {collection_path} (meta().id)",
+                    # Compound index for sorting by document key
+                    f"CREATE INDEX idx_production_lines_sort ON {collection_path} (meta().id, status, efficiency)"
                 ])
             
             # === MACHINES INDEXES ===
             if 'machines' in collection_paths:
                 collection_path = collection_paths['machines']
                 secondary_indexes.extend([
-                    # Index for machine_id lookups
-                    f"CREATE INDEX idx_machines_id ON {collection_path} (machine_id)",
+                    # Index for document key lookups using meta().id
+                    f"CREATE INDEX idx_machines_id ON {collection_path} (meta().id)",
                     # Compound index for production_line_id + sorting
-                    f"CREATE INDEX idx_machines_line_sort ON {collection_path} (production_line_id, machine_id, current_status)",
+                    f"CREATE INDEX idx_machines_line_sort ON {collection_path} (production_line_id, meta().id, current_status)",
                     # Index for machine type queries
                     f"CREATE INDEX idx_machines_machine_type ON {collection_path} (machine_type)"
                 ])
@@ -317,8 +317,8 @@ class CouchbaseClient:
                     f"CREATE INDEX idx_alerts_machine_time ON {collection_path} (machine_id, timestamp DESC, status)",
                     # Index for error code lookups
                     f"CREATE INDEX idx_alerts_error_code ON {collection_path} (error_code, timestamp DESC)",
-                    # Compound index for alert_id and machine context queries
-                    f"CREATE INDEX idx_alerts_id_machine ON {collection_path} (alert_id, machine_id, status)"
+                    # Compound index for document key and machine context queries
+                    f"CREATE INDEX idx_alerts_id_machine ON {collection_path} (meta().id, machine_id, status)"
                 ])
             
             # === MAINTENANCE INDEXES ===

@@ -91,10 +91,24 @@ class SampleDataGenerator:
             return []
     
     def _store_model_as_document(self, doc_id: str, model_instance: Any, collection_type: str):
-        """Converts a Pydantic model to a dict and stores it."""
+        """Convert a Pydantic model to a dict, remove its identifier field, and store it.
+
+        The unique identifier value is already supplied as the document key (``doc_id``),
+        so we strip it from the document body before persisting. This keeps the payload
+        clean and avoids redundant data.
+        """
+        # Convert the model to a plain dict first
         doc = model_instance.dict()
+
+        id_field = "id"
+        if id_field:
+            doc.pop(id_field, None)  # Remove the id field if present
+
+        # Persist the document using the provided key
         self.couchbase_client.store_document(
-            doc_id, doc, collection_type=collection_type
+            doc_id,
+            doc,
+            collection_type=collection_type,
         )
     
     def _create_production_line(self, line_number: int) -> ProductionLine:
@@ -102,7 +116,7 @@ class SampleDataGenerator:
         line_id = f"LINE_{line_number:02d}"
         
         return ProductionLine(
-            production_line_id=line_id,
+            id=line_id,
             name=f"Production Line {line_number}",
             status=random.choice(list(ProductionLineStatus)),
             machines=[],  # Will be populated when machines are created
@@ -124,7 +138,7 @@ class SampleDataGenerator:
             machine_type = MachineType.ULTIMA_SV
         
         return Machine(
-            machine_id=machine_id,
+            id=machine_id,
             machine_type=machine_type,
             production_line_id=production_line_id,
             name=self.MACHINE_NAMES[machine_id_counter % len(self.MACHINE_NAMES)],
@@ -160,7 +174,7 @@ class SampleDataGenerator:
             
             # Store in Couchbase
             self._store_model_as_document(
-                f"production_line_{production_line.production_line_id}",
+                production_line.id,
                 production_line,
                 "production_lines"
             )
@@ -179,13 +193,13 @@ class SampleDataGenerator:
             line_machines = []
             
             for _ in range(machines_per_line):
-                machine = self._create_machine(machine_id_counter, line.production_line_id)
+                machine = self._create_machine(machine_id_counter, line.id)
                 machines.append(machine)
-                line_machines.append(machine.machine_id)
+                line_machines.append(machine.id)
                 
                 # Store in Couchbase
                 self._store_model_as_document(
-                    f"machine_{machine.machine_id}",
+                    machine.id,
                     machine,
                     "machines"
                 )
@@ -195,7 +209,7 @@ class SampleDataGenerator:
             # Update production line with machine IDs
             line.machines = line_machines
             self._store_model_as_document(
-                f"production_line_{line.production_line_id}",
+                line.id,
                 line,
                 "production_lines"
             )
@@ -216,8 +230,8 @@ class SampleDataGenerator:
             alert_template = random.choice(self.alert_templates)
             
             alert = Alert(
-                alert_id=str(uuid.uuid4()),
-                machine_id=machine.machine_id,
+                id=str(uuid.uuid4()),
+                machine_id=machine.id,
                 production_line_id=machine.production_line_id,
                 severity=alert_template["severity"],
                 status=random.choice(list(AlertStatus)),
@@ -243,7 +257,7 @@ class SampleDataGenerator:
             
             # Store in Couchbase
             self._store_model_as_document(
-                f"alert_{alert.alert_id}",
+                alert.id,
                 alert,
                 "alerts"
             )
@@ -276,8 +290,8 @@ class SampleDataGenerator:
             completed_date = started_date + timedelta(hours=random.randint(1, 8)) if random.random() > 0.2 else None
             
             maintenance_record = MaintenanceRecord(
-                maintenance_id=maintenance_id,
-                machine_id=machine.machine_id,
+                id=maintenance_id,
+                machine_id=machine.id,
                 maintenance_type=random.choice(maintenance_types),
                 status=random.choice(list(MaintenanceStatus)),
                 scheduled_date=scheduled_date,
@@ -295,7 +309,7 @@ class SampleDataGenerator:
             
             # Store in Couchbase
             self._store_model_as_document(
-                f"maintenance_{maintenance_id}",
+                maintenance_id,
                 maintenance_record,
                 "maintenance"
             )
@@ -320,7 +334,7 @@ class SampleDataGenerator:
                     efficiency = (units_produced / target_units) * 100
                     
                     metric = ProductionMetrics(
-                        line_id=line.production_line_id,
+                        line_id=line.id,
                         timestamp=timestamp,
                         units_produced=units_produced,
                         target_units=target_units,
@@ -336,7 +350,7 @@ class SampleDataGenerator:
                     
                     # Store in Couchbase
                     self._store_model_as_document(
-                        f"metrics_{line.production_line_id}_{timestamp.strftime('%Y%m%d_%H%M')}",
+                        f"{line.id}_{timestamp.strftime('%Y%m%d_%H%M')}",
                         metric,
                         "metrics"
                     )
