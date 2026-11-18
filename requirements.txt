@@ -2,6 +2,7 @@
 couchbase==4.6.4
 langgraph==0.4.7
 langgraph-prebuilt==0.2.3  # langgraph 0.4.x is not compatible with langgraph-prebuilt 1.x (needs langgraph._internal)
+langgraph-checkpoint>=2.0.26,<3.0.0  # langgraph-checkpointer-couchbase 1.0.x calls serde.dumps/loads, removed in langgraph-checkpoint 3.x
 langchain==0.3.30
 langchain-google-genai>=2.1.5,<3.0.0
 
