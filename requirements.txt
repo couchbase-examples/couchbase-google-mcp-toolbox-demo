@@ -1,21 +1,20 @@
 # Core dependencies
-couchbase==4.4.0
+couchbase==4.6.4
 langgraph==0.4.7
-langchain==0.3.25
+langgraph-prebuilt==0.2.3  # langgraph 0.4.x is not compatible with langgraph-prebuilt 1.x (needs langgraph._internal)
+langchain==0.3.30
 langchain-google-genai>=2.1.5,<3.0.0
 
 
-langchain-community==0.3.24
+langchain-community==0.3.27
 langchain-couchbase>=0.1.0
 langchain-core>=0.3.0
 langgraph-checkpointer-couchbase>=1.0.6,<2.0.0
 toolbox-langchain==0.2.0
 # Document processing
-PyPDF2==3.0.1
 pypdf>=3.0.0  # Alternative PDF loader for LangChain
 
 # Vector embeddings and similarity search
-sentence-transformers==2.2.2
 numpy>=1.26.0  # Updated to satisfy langchain-community requirements
 
 # Web framework and API
@@ -24,7 +23,7 @@ uvicorn[standard]
 
 # Data manipulation and utilities
 pandas==2.2.3
-python-dotenv==1.0.0
+python-dotenv==1.2.2
 pydantic>=2.0.0,<3.0.0
 pydantic-settings>=2.0.0
 

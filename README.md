@@ -79,7 +79,7 @@ pip install -r requirements.txt
 
 Key dependencies include:
 
-- `couchbase==4.4.0` for database connectivity
+- `couchbase==4.6.4` for database connectivity
 - `langgraph==0.4.7` for agent orchestration
 - `langchain-google-genai>=2.1.5` for Google AI integration
 - `toolbox-langchain==0.2.0` for MCP Toolbox for Databases integration
@@ -385,7 +385,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Couchbase**: For the scalable NoSQL database platform with vector search
 - **LangChain/LangGraph**: For the AI agent orchestration framework
 - **Google AI**: For the Gemini language model and embedding capabilities
-- **Sentence Transformers**: For additional embedding model support
 
 ## 📚 Additional Resources
 
