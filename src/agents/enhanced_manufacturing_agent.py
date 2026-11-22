@@ -50,50 +50,74 @@ class AgentConfig:
     NO_RESPONSE_ERROR: str = "Error: No response from AI."
 
 
-# Toolset mappings
-TOOLSETS = {
-    "troubleshooting": "troubleshooting",
-    "maintenance": "maintenance-planning", 
-    "monitoring": "production-monitoring",
-    "performance": "performance-analysis",
-    "general": "full-manufacturing-suite"
-}
+@dataclass(frozen=True)
+class AgentRoute:
+    """
+    One specialised agent in the routing graph.
 
-DEFAULT_TOOLSET = "full-manufacturing-suite"
+    Everything that defines an agent lives here: the MCP Toolbox toolset it
+    loads (a key under ``toolsets:`` in tools.yaml), its system prompt, and
+    whether it also gets the Couchbase vector-search manual retriever.
+    Routes are keyed by the ``query_type`` the API/Streamlit UI sends.
+    """
 
-# Node name mappings for the graph
-TOOLSET_TO_NODE_SUFFIX = {
-    "troubleshooting": "troubleshooting",
-    "maintenance-planning": "maintenance", 
-    "production-monitoring": "monitoring",
-    "performance-analysis": "performance",
-    "full-manufacturing-suite": "general"
-}
+    toolset: str
+    system_prompt: str
+    include_manual_search: bool = False
 
-# System prompts for different agent types
-SYSTEM_PROMPTS = {
-    "troubleshooting": """You are a manufacturing troubleshooting expert. Help operators identify and resolve equipment issues safely.
+
+# Routes keyed by query_type. Add an agent by adding one entry here and the
+# matching toolset in tools.yaml.
+ROUTES: Dict[str, AgentRoute] = {
+    "troubleshooting": AgentRoute(
+        toolset="troubleshooting",
+        include_manual_search=True,
+        system_prompt="""You are a manufacturing troubleshooting expert. Help operators identify and resolve equipment issues safely.
 
 Use available tools to gather information. For errors codes, must use both manual search tools and past solutions tools and show them separately.
 Provide step-by-step instructions with specific manual sections/error codes. Escalate complex issues to maintenance.""",
-
-    "maintenance": """You are a maintenance planning specialist. Help manage scheduled and unscheduled maintenance activities.
+    ),
+    "maintenance": AgentRoute(
+        toolset="maintenance-planning",
+        system_prompt="""You are a maintenance planning specialist. Help manage scheduled and unscheduled maintenance activities.
 
 Use tools to check upcoming/overdue maintenance. Prioritize critical tasks and coordinate to minimize downtime.""",
-
-    "monitoring": """You are a production monitoring assistant. Provide real-time visibility into production line status.
+    ),
+    "monitoring": AgentRoute(
+        toolset="production-monitoring",
+        system_prompt="""You are a production monitoring assistant. Provide real-time visibility into production line status.
 
 Use monitoring tools for current data. Base all responses strictly on retrieved system information.""",
-
-    "performance": """You are a performance analyst. Help analyze and improve production efficiency.
+    ),
+    "performance": AgentRoute(
+        toolset="performance-analysis",
+        system_prompt="""You are a performance analyst. Help analyze and improve production efficiency.
 
 Use efficiency tools to analyze trends over specified periods. Provide data-driven insights for improvement decisions.""",
-
-    "general": """You are a CPG manufacturing operations expert. Help with troubleshooting, monitoring, maintenance, and performance optimization.
+    ),
+    "general": AgentRoute(
+        toolset="full-manufacturing-suite",
+        include_manual_search=True,
+        system_prompt="""You are a CPG manufacturing operations expert. Help with troubleshooting, monitoring, maintenance, and performance optimization.
 
 Use appropriate tools for information gathering. For errors codes, must use both manual search tools and past solutions tools and show them separately.
-Prioritize safety, provide actionable steps, reference specific data/sources, and suggest preventive measures."""
+Prioritize safety, provide actionable steps, reference specific data/sources, and suggest preventive measures.""",
+    ),
 }
+
+# Route used when the query_type is missing or unknown.
+DEFAULT_ROUTE_KEY = "general"
+
+
+def route_key_for(query_type: str) -> str:
+    """Resolve a query_type to a key in ROUTES, falling back to the general agent."""
+    return query_type if query_type in ROUTES else DEFAULT_ROUTE_KEY
+
+
+def node_name_for(route_key: str) -> str:
+    """Graph node name for a route key."""
+    return f"{route_key}_agent_node"
+
 
 # =============================================================================
 # STATE AND EXCEPTIONS
@@ -154,7 +178,6 @@ class EnhancedManufacturingAgent:
             # Initialize core components
             self.llm = self._initialize_llm()
             self.manual_search_tools = self._initialize_manual_search_tools()
-            self.agent_cache: Dict[str, object] = {}
             
             # Initialize agents and build graph
             self.agents = self._initialize_all_agents()
@@ -199,19 +222,19 @@ class EnhancedManufacturingAgent:
 
     def _initialize_all_agents(self) -> Dict[str, object]:
         """
-        Pre-initialize all ReAct agents for different toolsets.
+        Pre-initialize one ReAct agent per route.
         
         Returns:
-            Dictionary mapping agent keys to initialized agents
+            Dictionary mapping route keys to initialized agents
             
         Raises:
             AgentInitializationError: If any agent fails to initialize
         """
         try:
-            agents = {}
-            for agent_key, toolset_name in TOOLSETS.items():
-                agents[agent_key] = self._create_react_agent(toolset_name, agent_key)
-            
+            agents = {
+                route_key: self._create_react_agent(route)
+                for route_key, route in ROUTES.items()
+            }
             logger.info(f"Successfully initialized {len(agents)} ReAct agents")
             return agents
             
@@ -223,61 +246,25 @@ class EnhancedManufacturingAgent:
     # AGENT CREATION METHODS
     # =========================================================================
 
-    def _create_react_agent(self, toolset_name: str, agent_key: str) -> object:
-        """
-        Create and cache a ReAct agent for the specified toolset.
-        
-        Args:
-            toolset_name: Name of the toolset to create agent for
-            agent_key: Key to identify the agent type
-            
-        Returns:
-            Configured ReAct agent
-        """
-        # Check cache first
-        if toolset_name in self.agent_cache:
-            return self.agent_cache[toolset_name]
-        
-        logger.info(f"Creating ReAct agent for toolset: {toolset_name}")
-        
-        try:
-            # Prepare tools and configuration
-            all_tools = self._prepare_agent_tools(toolset_name)
-            system_prompt = self._get_system_prompt(agent_key)
-            
-            # Create and cache agent
-            react_agent = self._build_react_agent(all_tools, system_prompt)
-            self.agent_cache[toolset_name] = react_agent
-            
-            logger.info(f"Successfully created and cached agent for: {toolset_name}")
-            return react_agent
-            
-        except Exception as e:
-            logger.error(f"Failed to create agent for toolset '{toolset_name}': {e}")
-            raise
+    def _create_react_agent(self, route: AgentRoute) -> object:
+        """Create a ReAct agent with the route's tools and system prompt."""
+        logger.info(f"Creating ReAct agent for toolset: {route.toolset}")
+        return create_react_agent(
+            model=self.llm,
+            tools=self._prepare_agent_tools(route),
+            checkpointer=self.checkpointer,
+            prompt=route.system_prompt,
+            debug=True
+        )
 
-    def _prepare_agent_tools(self, toolset_name: str) -> List[BaseTool]:
-        """
-        Prepare all tools for a specific toolset.
-        
-        Args:
-            toolset_name: Name of the toolset
-            
-        Returns:
-            List of tools for the toolset
-        """
-        # Load toolbox tools
-        toolbox_tools = self._load_toolbox_tools(toolset_name)
-        
-        # Add manual search tools for troubleshooting and general agents
-        if self._should_include_manual_tools(toolset_name):
-            all_tools = toolbox_tools + self.manual_search_tools
-            logger.info(f"Added {len(self.manual_search_tools)} manual search tools for {toolset_name}")
-        else:
-            all_tools = toolbox_tools
-            
-        logger.info(f"Prepared {len(all_tools)} tools for toolset '{toolset_name}'")
-        return all_tools
+    def _prepare_agent_tools(self, route: AgentRoute) -> List[BaseTool]:
+        """Toolbox tools for the route's toolset, plus manual search if the route uses it."""
+        tools = self._load_toolbox_tools(route.toolset)
+        if route.include_manual_search:
+            tools = tools + self.manual_search_tools
+            logger.info(f"Added {len(self.manual_search_tools)} manual search tools for {route.toolset}")
+        logger.info(f"Prepared {len(tools)} tools for toolset '{route.toolset}'")
+        return tools
 
     def _load_toolbox_tools(self, toolset_name: str) -> List[BaseTool]:
         """
@@ -297,27 +284,6 @@ class EnhancedManufacturingAgent:
         except Exception as e:
             logger.error(f"Failed to load tools for toolset '{toolset_name}': {e}")
             return []
-
-    def _should_include_manual_tools(self, toolset_name: str) -> bool:
-        """Check if manual search tools should be included for the toolset."""
-        return (
-            toolset_name in ["troubleshooting", "full-manufacturing-suite"] 
-            and self.manual_search_tools
-        )
-
-    def _get_system_prompt(self, agent_key: str) -> str:
-        """Get the system prompt for an agent type."""
-        return SYSTEM_PROMPTS.get(agent_key, SYSTEM_PROMPTS['general'])
-
-    def _build_react_agent(self, tools: List[BaseTool], system_prompt: str) -> object:
-        """Build a ReAct agent with the given tools and system prompt."""
-        return create_react_agent(
-            model=self.llm,
-            tools=tools,
-            checkpointer=self.checkpointer,
-            prompt=system_prompt,
-            debug=True
-        )
 
     # =========================================================================
     # GRAPH WORKFLOW METHODS
@@ -355,9 +321,9 @@ class EnhancedManufacturingAgent:
         """
         node_names = []
         
-        for toolset_key, toolset_name in TOOLSETS.items():
-            node_name = self._get_node_name(toolset_name)
-            node_method = self._create_agent_node_method(toolset_key)
+        for route_key in ROUTES:
+            node_name = node_name_for(route_key)
+            node_method = self._create_agent_node_method(route_key)
             
             workflow.add_node(node_name, node_method)
             workflow.add_edge(node_name, END)
@@ -395,11 +361,10 @@ class EnhancedManufacturingAgent:
         
         logger.info(f"Routing query_type: {query_type}")
         
-        # Determine route destination
-        toolset_name = self._select_toolset(query_type)
-        route_destination = self._get_node_name(toolset_name)
+        route_key = route_key_for(query_type)
+        route_destination = node_name_for(route_key)
         
-        logger.info(f"Selected toolset '{toolset_name}', routing to '{route_destination}'")
+        logger.info(f"Selected toolset '{ROUTES[route_key].toolset}', routing to '{route_destination}'")
         return {"current_route": route_destination}
 
     async def _execute_agent_node(self, state: AgentGraphState, toolset_key: str) -> Dict[str, List[AIMessage]]:
@@ -451,15 +416,6 @@ class EnhancedManufacturingAgent:
     # =========================================================================
     # UTILITY METHODS
     # =========================================================================
-
-    def _get_node_name(self, toolset_name: str) -> str:
-        """Generate node name for a given toolset."""
-        suffix = TOOLSET_TO_NODE_SUFFIX.get(toolset_name, "general")
-        return f"{suffix}_agent_node"
-
-    def _select_toolset(self, query_type: str) -> str:
-        """Select the appropriate toolset based on query type."""
-        return TOOLSETS.get(query_type, DEFAULT_TOOLSET)
 
     def _create_agent_node_method(self, toolset_key: str) -> Callable:
         """Create an agent node method for a specific toolset."""
