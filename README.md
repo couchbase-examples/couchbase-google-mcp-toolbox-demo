@@ -297,6 +297,13 @@ Different system prompts for specialized agents:
 - **Performance Agent**: Data-driven efficiency analysis
 - **General Agent**: Comprehensive manufacturing support
 
+Each agent is one `AgentRoute` entry in `ROUTES` (`src/agents/enhanced_manufacturing_agent.py`). The entry holds the agent's `tools.yaml` toolset, its system prompt, and whether it also uses Couchbase manual search. To add an agent, add a route there and the matching toolset in `tools.yaml`. The offline route checks don't need Couchbase, the Toolbox server or a Gemini key:
+
+```bash
+pip install pytest
+python -m pytest tests
+```
+
 ## 🎯 Use Cases Demonstrated
 
 ### 1. Intelligent Troubleshooting
